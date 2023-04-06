@@ -2,11 +2,12 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
+
 import {
+  getParsedUSFM,
   getQuoteMatchesInBookRef,
   getTargetQuoteFromWords,
-} from "../src/helpers/quote";
-import { getParsedUSFM } from "../src/helpers/scripture";
+} from "../src/";
 
 // Get the URL of the current module
 const __filename = fileURLToPath(import.meta.url);
@@ -15,19 +16,19 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const targetUsfm = fs.readFileSync(
-  path.join(__dirname, "../examples/data/", "aligned-2JN.usfm"),
+  path.join(__dirname, "../examples/data/", "aligned-PHP.usfm"),
   "utf8"
 );
 
 const sourceUsfm = fs.readFileSync(
-  path.join(__dirname, "../examples/data/", "orig-2JN.usfm"),
+  path.join(__dirname, "../examples/data/", "orig-PHP.usfm"),
   "utf8"
 );
 
 const sourceBook = getParsedUSFM(sourceUsfm).chapters;
 const quoteMatches = getQuoteMatchesInBookRef({
-  quote: "καὶ & ἐγὼ",
-  ref: "1:1-13",
+  quote: "καὶ & καὶ",
+  ref: "1:15-17",
   bookObject: sourceBook,
   isOrigLang: true,
   occurrence: -1,
