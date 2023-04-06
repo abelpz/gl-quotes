@@ -1,22 +1,29 @@
 {
   "name": "uw-quote-helpers",
   "description": "An open component package for generating target quotes from an aligned Bible.",
-  "version": "0.0.1-beta.2",
+  "version": "0.0.1-beta.8",
   "homepage": "",
   "license": "MIT",
   "repository": {
     "type": "git",
     "url": "https://github.com/"
   },
-  "type": "module",
+  "scripts": {
+    "start": "npx styleguidist server --port=3030",
+    "build:guide": "npx styleguidist build && mv styleguide build",
+    "build": "vite build",
+    "test": "set NODE_OPTIONS=--experimental-vm-modules && yarn jest",
+    "sections": "node styleguide.sections.js",
+    "preinstall": "npx only-allow pnpm"
+  },
+  "peerDependencies": {
+    "usfm-js": "^3.4.2"
+  },
   "dependencies": {
     "bible-reference-range": "^1.1.0",
     "string-punctuation-tokenizer": "^2.2.0",
     "tsv-groupdata-parser": "1.1.0-beta.4",
     "xregexp": "^5.1.1"
-  },
-  "peerDependencies": {
-    "usfm-js": "^3.4.2"
   },
   "devDependencies": {
     "@babel/cli": "^7.21.0",
@@ -37,13 +44,17 @@
     "vite": "^4.1.4",
     "webpack-cli": "^4.10.0"
   },
-  "scripts": {
-    "start": "yarn && npx styleguidist server --port=3030",
-    "build:guide": "npx styleguidist build && mv styleguide build",
-    "build": "vite build",
-    "test": "set NODE_OPTIONS=--experimental-vm-modules && yarn jest",
-    "sections": "node styleguide.sections.js",
-    "preinstall": "npx only-allow pnpm"
+  "type": "commonjs",
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "exports": {
+    ".": {
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs"
+    }
   },
   "eslintConfig": {
     "extends": [
@@ -63,10 +74,6 @@
       "last 1 safari version"
     ]
   },
-  "main": "dist/index.js",
-  "files": [
-    "dist"
-  ],
   "browser": {
     "fs": false,
     "os": false,

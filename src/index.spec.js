@@ -15,12 +15,12 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const targetUsfm = fs.readFileSync(
-  path.join(__dirname, "../examples/data/", "aligned-2JN.usfm"),
+  path.join(__dirname, "../examples/data/", "aligned-PHP.usfm"),
   "utf8"
 );
 
 const sourceUsfm = fs.readFileSync(
-  path.join(__dirname, "../examples/data/", "orig-2JN.usfm"),
+  path.join(__dirname, "../examples/data/", "orig-PHP.usfm"),
   "utf8"
 );
 

@@ -4,7 +4,7 @@ const webpack = require('webpack');
 const { name: packageName, version, repository } = require('./package.json');
 
 module.exports = {
-  assetsDir: 'src/data',
+  // assetsDir: 'src/data',
   usageMode: 'expand',
   exampleMode: 'expand',
   moduleAliases: {},

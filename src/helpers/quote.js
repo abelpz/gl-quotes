@@ -1,6 +1,7 @@
 import { tokenize, tokenizeOrigLang } from "string-punctuation-tokenizer";
 import { DEFAULT_SEPARATOR, QUOTE_ELLIPSIS } from "../utils/consts";
 import { refToString, setBook, verseObjectsToString } from "./scripture";
+import { doesReferenceContain } from "bible-reference-range";
 
 export function cleanQuoteString(quote) {
   return (
@@ -225,13 +226,25 @@ export function getQuoteMatchesInBookRef({
 }
 
 export function getTargetQuoteFromWords({ targetBook, wordsMap }) {
-  if (!(wordsMap instanceof Map)) throw "wordsMap should be an instance of Map";
+  if (!(wordsMap instanceof Map))
+    throw new Error("wordsMap should be an instance of Map");
   let quotes = [];
   for (const [ref, wordObjects] of wordsMap) {
     const [chapter, verse] = ref.split(":");
-    const verseObjects = targetBook[chapter]?.[verse]?.verseObjects;
+    const targetChapter = targetBook[chapter] ?? {};
+    let targetVerse = targetChapter?.[verse];
+    if (!targetVerse) {
+      const verses = Object.keys(targetChapter).find((verse) => {
+        const currentRef = `${chapter}:${verse}`;
+        return doesReferenceContain(currentRef, ref);
+      });
+      targetVerse = targetChapter?.[verses];
+    }
+    const verseObjects = targetVerse?.verseObjects;
     if (!verseObjects)
-      throw `targetBook does not contain verseObjects for reference: ${ref}`;
+      throw new Error(
+        `targetBook does not contain verseObjects for reference: ${ref}`
+      );
     const refQuotes = getTargetQuotesFromOrigWords({
       wordObjects,
       verseObjects,
@@ -240,4 +253,41 @@ export function getTargetQuoteFromWords({ targetBook, wordsMap }) {
     quotes.push(refQuotes);
   }
   return quotes.join(" " + QUOTE_ELLIPSIS + " ");
+}
+
+/**
+ * Gets the target quote string from a source quote string
+ * @param {object} params
+ * @param {string} params.quote - the source quote
+ * @param {string} params.ref - the reference. i.e. "1:1,10"
+ * @param {object} params.sourceBook - the source book chapters object.\
+ * @param {object} params.targetBook - the target book chapters object.
+ * @param {object} params.options
+ * @param {number|string} [params.options.occurrence = -1] - the occurrence to find in the given reference (default: -1)
+ * @param {boolean} [params.options.fromOrigLang = true] - true if the source language is an original language (default: true)
+ * @returns
+ */
+export function getTargetQuoteFromSourceQuote({
+  quote,
+  ref,
+  sourceBook,
+  targetBook,
+  options,
+}) {
+  const { occurrence: o = -1, fromOrigLang = true } = options;
+  const occurrence = parseInt(o, 10);
+
+  const quoteMatches = getQuoteMatchesInBookRef({
+    quote,
+    ref,
+    bookObject: sourceBook,
+    isOrigLang: fromOrigLang,
+    occurrence,
+  });
+
+  const targetQuotes = getTargetQuoteFromWords({
+    targetBook,
+    wordsMap: quoteMatches,
+  });
+  return targetQuotes;
 }
