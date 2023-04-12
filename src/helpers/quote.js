@@ -258,16 +258,20 @@ export function getQuoteMatchesInBookRef({
     let iteration = 0;
     let index = 0;
     while (keepSearching) {
-      // eslint-disable-next-line no-loop-func
-      const currentMatches = patterns.reduce((currentMatches, regexp) => {
-        const match = XRegExp.exec(source, regexp, index);
-        if (match) {
-          index = match.index + match[0].length;
-          return currentMatches.concat(match.slice(1));
-        }
-        keepSearching = false;
-        return [];
-      }, []);
+      const currentMatches = patterns.reduce(
+        // eslint-disable-next-line no-loop-func
+        (currentMatches, regexp, i, matches) => {
+          const match = XRegExp.exec(source, regexp, index);
+          if (match) {
+            index = match.index + match[0].length;
+            return currentMatches.concat(match.slice(1));
+          }
+          keepSearching = false;
+          matches.length = 0;
+          return [];
+        },
+        []
+      );
       matches = matches.concat(currentMatches);
       if (iteration === limit) {
         keepSearching = false;
