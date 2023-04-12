@@ -9,6 +9,29 @@ import {
   getTargetQuoteFromWords,
 } from "../src/";
 
+const targetBooks = {};
+const sourceBooks = {};
+
+function getTargetBook(bookId) {
+  const targetUsfm = fs.readFileSync(
+    path.join(__dirname, "../examples/data/", `${bookId}-target.usfm`),
+    "utf8"
+  );
+  const targetBook = getParsedUSFM(targetUsfm).chapters;
+  targetBooks[bookId] = targetBook;
+  return targetBook;
+}
+
+function getSourceBook(bookId) {
+  const sourceUsfm = fs.readFileSync(
+    path.join(__dirname, "../examples/data/", `${bookId}-source.usfm`),
+    "utf8"
+  );
+  const sourceBook = getParsedUSFM(sourceUsfm).chapters;
+  sourceBooks[bookId] = sourceBook;
+  return sourceBook;
+}
+
 // Get the URL of the current module
 const __filename = fileURLToPath(import.meta.url);
 
@@ -16,6 +39,33 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const tests = [
+  {
+    params: {
+      name: "and I rescued you from his hand",
+      bookId: "JOS",
+      ref: "24:10",
+      quote: "וָ⁠אַצִּ֥ל אֶתְ⁠כֶ֖ם מִ⁠יָּדֽ⁠וֹ",
+    },
+    expected: "",
+  },
+  {
+    params: {
+      name: "",
+      bookId: "JOS",
+      ref: "21:27",
+      quote: "אֶת־גּוֹלָ֤ן & בְּעֶשְׁתְּרָ֖ה",
+    },
+    expected: "Golan & Be Eshterah",
+  },
+  {
+    params: {
+      name: "",
+      bookId: "JOS",
+      ref: "1:11",
+      quote: "בְּ⁠ע֣וֹד׀ שְׁלֹ֣שֶׁת יָמִ֗ים",
+    },
+    expected: "in yet three days",
+  },
   {
     params: {
       bookId: "JOS",
@@ -64,21 +114,13 @@ const tests = [
 
 describe("Find quotes", () => {
   test.each(tests)(
-    `REF: "$params.bookId $params.ref" | QUOTE: "$params.quote"`,
+    `REF: "$params.bookId $params.ref" | EXPECTED: "$expected"`,
     ({ params, expected }) => {
       const { bookId, ref, quote } = params;
 
-      const targetUsfm = fs.readFileSync(
-        path.join(__dirname, "../examples/data/", `${bookId}-target.usfm`),
-        "utf8"
-      );
+      const targetBook = targetBooks[bookId] ?? getTargetBook(bookId);
+      const sourceBook = sourceBooks[bookId] ?? getSourceBook(bookId);
 
-      const sourceUsfm = fs.readFileSync(
-        path.join(__dirname, "../examples/data/", `${bookId}-source.usfm`),
-        "utf8"
-      );
-
-      const sourceBook = getParsedUSFM(sourceUsfm).chapters;
       const quoteMatches = getQuoteMatchesInBookRef({
         quote,
         ref,
@@ -86,7 +128,6 @@ describe("Find quotes", () => {
         isOrigLang: true,
         occurrence: -1,
       });
-      const targetBook = getParsedUSFM(targetUsfm).chapters;
 
       const targetQuotes = getTargetQuoteFromWords({
         targetBook,
