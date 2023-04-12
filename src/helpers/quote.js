@@ -195,31 +195,20 @@ export function getQuoteMatchesInBookRef({
 
     sourceArray.push(
       verseObjectsToString(verseObjects, (word) => {
-        const quote = tokensMap.get(word);
+        const _word = word.trim();
+        const quote = tokensMap.get(_word);
         if (!quote) return word;
         quote.count++;
-        return joinWordData(word, verseRef, quote.count);
+        return joinWordData(_word, verseRef, quote.count);
       })
     );
   });
   const sourceString = sourceArray.join("\n");
-  // const searchPatterns2 = quoteTokens.map((token, index) => {
-  //   //TODO: change .+? pattern to a space when words in quote are supposed to be separated by a space.
-  //   if (token === QUOTE_ELLIPSIS) return XRegExp(`(?:.*?).*?`);
-  //   const AFTER = quoteTokens[index + 1] === QUOTE_ELLIPSIS ? `.*?` : ` `;
-  //   const escaped = XRegExp.escape(token);
-  //   return XRegExp(
-  //     `(${escaped}${enclose(
-  //       `${REF_PATTERN}${XRegExp.escape("|")}${OCCURRENCE_PATTERN}`
-  //     )})${AFTER}`
-  //   );
-  // });
 
   const searchPatterns = quoteTokens.reduce((patterns, token, index) => {
-    //TODO: change .+? pattern to a space when words in quote are supposed to be separated by a space.
     if (token === QUOTE_ELLIPSIS) return patterns;
     const push =
-      (quoteTokens[index - 1] === QUOTE_ELLIPSIS) | (patterns.length === 0);
+      (patterns.length === 0) | (quoteTokens[index - 1] === QUOTE_ELLIPSIS);
     const AFTER =
       quoteTokens[index + 1] && quoteTokens[index + 1] === QUOTE_ELLIPSIS
         ? ""
@@ -242,14 +231,6 @@ export function getQuoteMatchesInBookRef({
     });
     return patterns;
   }, []);
-
-  // const regexp = XRegExp.union(searchPatterns, "g", {
-  //   conjunction: "none",
-  // });
-
-  // XRegExp.install({
-  //   namespacing: false,
-  // });
 
   const searchQuotes = (source, patterns) => {
     let keepSearching = true;
