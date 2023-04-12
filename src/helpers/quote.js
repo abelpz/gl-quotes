@@ -2,6 +2,7 @@ import { tokenize, tokenizeOrigLang } from "string-punctuation-tokenizer";
 import { DEFAULT_SEPARATOR, QUOTE_ELLIPSIS } from "../utils/consts";
 import { refToString, setBook, verseObjectsToString } from "./scripture";
 import { doesReferenceContain } from "bible-reference-range";
+import XRegExp from "xregexp";
 
 export function cleanQuoteString(quote) {
   return (
@@ -158,6 +159,8 @@ export function getQuoteMatchesInBookRef({
   const DATA_SEPARATOR = "|";
   const OPEN_CHAR = "{";
   const CLOSE_CHAR = "}";
+  const REF_PATTERN = "\\d+:\\d+";
+  const OCCURRENCE_PATTERN = "\\d+";
   const enclose = (word) => OPEN_CHAR + word + CLOSE_CHAR;
 
   const joinWordData = (word, refObject, occurrence) => {
@@ -200,28 +203,96 @@ export function getQuoteMatchesInBookRef({
     );
   });
   const sourceString = sourceArray.join("\n");
-  const searchPatterns = quoteTokens.map((token) => {
-    if (token === QUOTE_ELLIPSIS) return `(?:.*?).*?`;
-    return `(${token}${enclose(".+?")}).*?`;
-  });
-  const regexp = new RegExp(searchPatterns.join(""), "g");
-  const foundOccurrences = Array.from(sourceString.matchAll(regexp)).reduce(
-    (occurrences, match, key) => {
-      const currentOccurence = key + 1;
-      if (occurrence !== -1 && currentOccurence !== occurrence)
-        return occurrences;
-      const words = match.slice(1);
-      words.forEach((_word) => {
-        const { chapter, verse, ...wordObject } = splitWordData(_word);
-        const refString = refToString({ chapter, verse });
-        const currentWordsInRef = occurrences.get(refString);
-        if (currentWordsInRef) currentWordsInRef.push(wordObject);
-        else occurrences.set(refString, [wordObject]);
-      });
+  // const searchPatterns2 = quoteTokens.map((token, index) => {
+  //   //TODO: change .+? pattern to a space when words in quote are supposed to be separated by a space.
+  //   if (token === QUOTE_ELLIPSIS) return XRegExp(`(?:.*?).*?`);
+  //   const AFTER = quoteTokens[index + 1] === QUOTE_ELLIPSIS ? `.*?` : ` `;
+  //   const escaped = XRegExp.escape(token);
+  //   return XRegExp(
+  //     `(${escaped}${enclose(
+  //       `${REF_PATTERN}${XRegExp.escape("|")}${OCCURRENCE_PATTERN}`
+  //     )})${AFTER}`
+  //   );
+  // });
+
+  const searchPatterns = quoteTokens.reduce((patterns, token, index) => {
+    //TODO: change .+? pattern to a space when words in quote are supposed to be separated by a space.
+    if (token === QUOTE_ELLIPSIS) return patterns;
+    const push =
+      (quoteTokens[index - 1] === QUOTE_ELLIPSIS) | (patterns.length === 0);
+    const AFTER =
+      quoteTokens[index + 1] && quoteTokens[index + 1] === QUOTE_ELLIPSIS
+        ? ""
+        : `\\s?`;
+    const escaped = XRegExp.escape(token);
+    const regexp = XRegExp(
+      `(${escaped}${enclose(
+        `${REF_PATTERN}${XRegExp.escape("|")}${OCCURRENCE_PATTERN}`
+      )})${AFTER}`
+    );
+
+    if (push) {
+      patterns.push(regexp);
+      return patterns;
+    }
+
+    const current = patterns.length - 1;
+    patterns[current] = XRegExp.union([patterns[current], regexp], "g", {
+      conjunction: "none",
+    });
+    return patterns;
+  }, []);
+
+  // const regexp = XRegExp.union(searchPatterns, "g", {
+  //   conjunction: "none",
+  // });
+
+  // XRegExp.install({
+  //   namespacing: false,
+  // });
+
+  const searchQuotes = (source, patterns) => {
+    let keepSearching = true;
+    let matches = [];
+    let limit = 100;
+    let iteration = 0;
+    let index = 0;
+    while (keepSearching) {
+      // eslint-disable-next-line no-loop-func
+      const currentMatches = patterns.reduce((currentMatches, regexp) => {
+        const match = XRegExp.exec(source, regexp, index);
+        if (match) {
+          index = match.index + match[0].length;
+          return currentMatches.concat(match.slice(1));
+        }
+        keepSearching = false;
+        return [];
+      }, []);
+      matches = matches.concat(currentMatches);
+      if (iteration === limit) {
+        keepSearching = false;
+        console.log("limit reached");
+      }
+      iteration++;
+    }
+    return matches;
+  };
+
+  const matches = searchQuotes(sourceString, searchPatterns);
+
+  const foundOccurrences = [matches].reduce((occurrences, words, key) => {
+    const currentOccurence = key + 1;
+    if (occurrence !== -1 && currentOccurence !== occurrence)
       return occurrences;
-    },
-    new Map()
-  );
+    words.forEach((_word) => {
+      const { chapter, verse, ...wordObject } = splitWordData(_word);
+      const refString = refToString({ chapter, verse });
+      const currentWordsInRef = occurrences.get(refString);
+      if (currentWordsInRef) currentWordsInRef.push(wordObject);
+      else occurrences.set(refString, [wordObject]);
+    });
+    return occurrences;
+  }, new Map());
   return foundOccurrences;
 }
 

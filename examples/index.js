@@ -15,28 +15,72 @@ const __filename = fileURLToPath(import.meta.url);
 // Get the directory name of the current module
 const __dirname = dirname(__filename);
 
-const targetUsfm = fs.readFileSync(
-  path.join(__dirname, "../examples/data/", "aligned-PHP.usfm"),
-  "utf8"
-);
+const tests = [
+  {
+    params: {
+      bookId: "JOS",
+      ref: "15:7",
+      quote:
+        "דְּבִרָ⁠ה֮ מֵ⁠עֵ֣מֶק עָכוֹר֒ & הַ⁠גִּלְגָּ֗ל & לְ⁠מַעֲלֵ֣ה אֲדֻמִּ֔ים & מֵי־עֵ֣ין שֶׁ֔מֶשׁ & עֵ֥ין רֹגֵֽל",
+    },
+    expected:
+      "to Debir from the Valley of Trouble, & the Gilgal, & of the ascent of Adummim, & the waters of En Shemesh & En Rogel",
+  },
+  {
+    params: {
+      bookId: "PHP",
+      ref: "1:1-20",
+      quote: "τινὲς μὲν καὶ & τὸν Χριστὸν κηρύσσουσιν",
+    },
+    expected: "Some indeed even proclaim Christ",
+  },
+  {
+    params: {
+      bookId: "GEN",
+      ref: "2:23",
+      quote: "עֶ֚צֶם מֵֽ⁠עֲצָמַ֔⁠י וּ⁠בָשָׂ֖ר מִ⁠בְּשָׂרִ֑⁠י",
+    },
+    expected: "is} bone from my bones\nand flesh from my flesh",
+  },
+  {
+    params: {
+      bookId: "GEN",
+      ref: "4:23",
+      quote: "כִּ֣י אִ֤ישׁ הָרַ֨גְתִּי֙ לְ⁠פִצְעִ֔⁠י וְ⁠יֶ֖לֶד לְ⁠חַבֻּרָתִֽ⁠י",
+    },
+    expected:
+      "For I killed a man for my wound,\neven a young man for my bruise",
+  },
+];
 
-const sourceUsfm = fs.readFileSync(
-  path.join(__dirname, "../examples/data/", "orig-PHP.usfm"),
-  "utf8"
-);
+tests.forEach(({ params, expected }) => {
+  const { bookId, ref, quote } = params;
 
-const sourceBook = getParsedUSFM(sourceUsfm).chapters;
-const quoteMatches = getQuoteMatchesInBookRef({
-  quote: "καὶ & καὶ",
-  ref: "1:15-17",
-  bookObject: sourceBook,
-  isOrigLang: true,
-  occurrence: -1,
+  const targetUsfm = fs.readFileSync(
+    path.join(__dirname, "../examples/data/", `${bookId}-target.usfm`),
+    "utf8"
+  );
+
+  const sourceUsfm = fs.readFileSync(
+    path.join(__dirname, "../examples/data/", `${bookId}-source.usfm`),
+    "utf8"
+  );
+
+  const sourceBook = getParsedUSFM(sourceUsfm).chapters;
+  const quoteMatches = getQuoteMatchesInBookRef({
+    quote,
+    ref,
+    bookObject: sourceBook,
+    isOrigLang: true,
+    occurrence: -1,
+  });
+  const targetBook = getParsedUSFM(targetUsfm).chapters;
+
+  const targetQuotes = getTargetQuoteFromWords({
+    targetBook,
+    wordsMap: quoteMatches,
+  });
+
+  if (targetQuotes !== expected)
+    console.error("Quote not found in", bookId, ref);
 });
-const targetBook = getParsedUSFM(targetUsfm).chapters;
-const targetQuotes = getTargetQuoteFromWords({
-  targetBook,
-  wordsMap: quoteMatches,
-});
-
-console.log(targetQuotes);
