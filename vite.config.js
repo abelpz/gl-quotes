@@ -17,7 +17,19 @@ export default defineConfig({
 
   plugins: [
     babel({
-      presets: ["@babel/preset-env"],
+      babelHelpers: "bundled",
+      presets: [
+        [
+          "@babel/preset-env",
+          {
+            targets: {
+              node: "current",
+              browsers: "> 0.25%, not dead",
+            },
+          },
+        ],
+      ],
+      exclude: [/\bcore-js\b/, /\bwebpack\/buildin\b/],
       plugins: ["@babel/plugin-proposal-nullish-coalescing-operator"],
     }),
   ],
