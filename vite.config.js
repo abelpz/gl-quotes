@@ -1,4 +1,6 @@
 import { defineConfig } from "vite";
+import babel from "@rollup/plugin-babel";
+
 // import { join } from 'path';
 
 export default defineConfig({
@@ -13,6 +15,12 @@ export default defineConfig({
   //  ],
   // },
 
+  plugins: [
+    babel({
+      presets: ["@babel/preset-env"],
+      plugins: ["@babel/plugin-proposal-nullish-coalescing-operator"],
+    }),
+  ],
   // Configuration for building your library.
   // See: https://vitejs.dev/guide/build.html#library-mode
   build: {
