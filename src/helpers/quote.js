@@ -30,6 +30,7 @@ export function cleanQuoteString(quote) {
       .trim()
       .replace(/ *\... */g, ` ${QUOTE_ELLIPSIS} `)
       .replace(/ *… */gi, ` ${QUOTE_ELLIPSIS} `)
+      .replaceAll(/\\n|\\r/g, "")
   );
 }
 
@@ -72,15 +73,20 @@ export function getTargetQuotesFromOrigWords({
     const verseObject = verseObjects[i];
     let lastMatch = false;
 
-    if (verseObject.type === "milestone" || verseObject.type === "word") {
+    if (
+      verseObject.type === "milestone" ||
+      verseObject.type === "word" ||
+      verseObject.type === "quote"
+    ) {
       // It is a milestone or a word...we want to handle all of them.
       if (
         isMatch ||
-        wordObjects.find(
-          (item) =>
+        wordObjects.find((item) => {
+          return (
             verseObject.content?.normalize() === item.text?.normalize() &&
             verseObject.occurrence === item.occurrence
-        )
+          );
+        })
       ) {
         lastMatch = true;
 

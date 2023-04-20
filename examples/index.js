@@ -43,6 +43,15 @@ const tests = [
     params: {
       name: "",
       bookId: "PSA",
+      ref: "3:2",
+      quote: "סֶֽלָה",
+    },
+    expected: "Selah",
+  },
+  {
+    params: {
+      name: "",
+      bookId: "PSA",
       ref: "1:1",
       quote: "אַ֥שְֽׁרֵי",
     },
