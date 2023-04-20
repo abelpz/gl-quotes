@@ -1,7 +1,7 @@
 {
   "name": "uw-quote-helpers",
   "description": "An open component package for generating target quotes from an aligned Bible.",
-  "version": "0.0.1-beta.12",
+  "version": "0.0.1-beta.13",
   "homepage": "",
   "license": "MIT",
   "repository": {
@@ -44,16 +44,16 @@
     "vite": "^4.1.4",
     "webpack-cli": "^4.10.0"
   },
-  "type": "commonjs",
+  "type": "module",
   "files": [
     "dist"
   ],
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "exports": {
     ".": {
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs"
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
     }
   },
   "eslintConfig": {

@@ -41,12 +41,21 @@ const __dirname = dirname(__filename);
 const tests = [
   {
     params: {
-      name: "and I rescued you from his hand",
+      name: "",
+      bookId: "PSA",
+      ref: "1:1",
+      quote: "אַ֥שְֽׁרֵי",
+    },
+    expected: "Happy",
+  },
+  {
+    params: {
+      name: "",
       bookId: "JOS",
       ref: "24:10",
       quote: "וָ⁠אַצִּ֥ל אֶתְ⁠כֶ֖ם מִ⁠יָּדֽ⁠וֹ",
     },
-    expected: "",
+    expected: "and I rescued you from his hand",
   },
   {
     params: {
