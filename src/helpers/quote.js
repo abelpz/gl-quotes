@@ -35,7 +35,10 @@ export function cleanQuoteString(quote) {
 
 export function tokenizeQuote(quote, isOrigLang = false) {
   if (isOrigLang) {
-    return tokenizeOrigLang({ text: quote, includePunctuation: true });
+    return tokenizeOrigLang({
+      text: quote,
+      includePunctuation: true,
+    });
   } else {
     return tokenize({ text: quote, includePunctuation: true });
   }
@@ -75,7 +78,7 @@ export function getTargetQuotesFromOrigWords({
         isMatch ||
         wordObjects.find(
           (item) =>
-            verseObject.content === item.text &&
+            verseObject.content?.normalize() === item.text?.normalize() &&
             verseObject.occurrence === item.occurrence
         )
       ) {
@@ -156,6 +159,7 @@ export function getQuoteMatchesInBookRef({
   isOrigLang,
   occurrence = -1,
 }) {
+  if (occurrence === 0) return new Map();
   const DATA_SEPARATOR = "|";
   const OPEN_CHAR = "{";
   const CLOSE_CHAR = "}";
@@ -189,13 +193,13 @@ export function getQuoteMatchesInBookRef({
   let sourceArray = [];
   book.forEachVerse((verseObjects, verseRef) => {
     const tokensMap = quoteTokens.reduce((tokensMap, word) => {
-      tokensMap.set(word, { count: 0 });
+      tokensMap.set(word.normalize(), { count: 0 });
       return tokensMap;
     }, new Map());
 
     sourceArray.push(
       verseObjectsToString(verseObjects, (word) => {
-        const _word = word.trim();
+        const _word = word.normalize().trim();
         const quote = tokensMap.get(_word);
         if (!quote) return word;
         quote.count++;
@@ -213,7 +217,7 @@ export function getQuoteMatchesInBookRef({
       quoteTokens[index + 1] && quoteTokens[index + 1] === QUOTE_ELLIPSIS
         ? ""
         : `\\s?`;
-    const escaped = XRegExp.escape(token);
+    const escaped = XRegExp.escape(token.normalize());
     const regexp = XRegExp(
       `(${escaped}${enclose(
         `${REF_PATTERN}${XRegExp.escape("|")}${OCCURRENCE_PATTERN}`

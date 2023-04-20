@@ -44,7 +44,7 @@ const tests = [
       name: "",
       bookId: "PSA",
       ref: "1:1",
-      quote: "אַ֥שְֽׁרֵי",
+      quote: "אַ֥שְֽׁרֵי",
     },
     expected: "Happy",
   },
