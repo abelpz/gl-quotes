@@ -43,6 +43,15 @@ const tests = [
     params: {
       name: "",
       bookId: "GEN",
+      ref: "1:21",
+      quote: "וְ⁠אֵ֣ת כָּל נֶ֣פֶשׁ הַֽ⁠חַיָּ֣ה הָֽ⁠רֹמֶ֡שֶׂת",
+    },
+    expected: "and every living creature that moves",
+  },
+  {
+    params: {
+      name: "",
+      bookId: "GEN",
       ref: "1:3",
       quote: "וַֽ⁠יְהִי אֽוֹר",
     },
