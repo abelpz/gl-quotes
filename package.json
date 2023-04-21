@@ -1,7 +1,7 @@
 {
   "name": "uw-quote-helpers",
   "description": "An open component package for generating target quotes from an aligned Bible.",
-  "version": "0.0.1-beta.19",
+  "version": "0.0.1-beta.20",
   "homepage": "",
   "license": "MIT",
   "repository": {
