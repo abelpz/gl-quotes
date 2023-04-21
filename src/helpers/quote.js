@@ -38,10 +38,15 @@ export function tokenizeQuote(quote, isOrigLang = false) {
   if (isOrigLang) {
     return tokenizeOrigLang({
       text: quote,
-      includePunctuation: true,
+      includePunctuation: false,
+      normalize: true,
     });
   } else {
-    return tokenize({ text: quote, includePunctuation: true });
+    return tokenize({
+      text: quote,
+      includePunctuation: false,
+      normalize: true,
+    });
   }
 }
 
