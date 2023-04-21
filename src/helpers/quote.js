@@ -83,7 +83,8 @@ export function getTargetQuotesFromOrigWords({
         isMatch ||
         wordObjects.find((item) => {
           return (
-            verseObject.content?.normalize() === item.text?.normalize() &&
+            verseObject.content?.normalize("NFKC") ===
+              item.text?.normalize("NFKC") &&
             verseObject.occurrence === item.occurrence
           );
         })
@@ -199,13 +200,13 @@ export function getQuoteMatchesInBookRef({
   let sourceArray = [];
   book.forEachVerse((verseObjects, verseRef) => {
     const tokensMap = quoteTokens.reduce((tokensMap, word) => {
-      tokensMap.set(word.normalize(), { count: 0 });
+      tokensMap.set(word.normalize("NFKC"), { count: 0 });
       return tokensMap;
     }, new Map());
 
     sourceArray.push(
       verseObjectsToString(verseObjects, (word) => {
-        const _word = word.normalize().trim();
+        const _word = word.normalize("NFKC").trim();
         const quote = tokensMap.get(_word);
         if (!quote) return word;
         quote.count++;
@@ -222,8 +223,8 @@ export function getQuoteMatchesInBookRef({
     const AFTER =
       quoteTokens[index + 1] && quoteTokens[index + 1] === QUOTE_ELLIPSIS
         ? ""
-        : `\\s?`;
-    const escaped = XRegExp.escape(token.normalize());
+        : `(?:\\s?|־?)`;
+    const escaped = XRegExp.escape(token.normalize("NFKC"));
     const regexp = XRegExp(
       `(${escaped}${enclose(
         `${REF_PATTERN}${XRegExp.escape("|")}${OCCURRENCE_PATTERN}`

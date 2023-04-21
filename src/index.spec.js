@@ -46,7 +46,7 @@ const tests = [
       ref: "1:3",
       quote: "וַֽ⁠יְהִי אֽוֹר",
     },
-    expected: "Selah",
+    expected: "And there was light",
   },
   {
     params: {
