@@ -42,6 +42,42 @@ const tests = [
   {
     params: {
       name: "",
+      bookId: "JOS",
+      ref: "21:27",
+      quote: "אֶת־גּוֹלָ֤ן & בְּעֶשְׁתְּרָ֖ה",
+    },
+    expected: "Golan & Be Eshterah",
+  },
+  {
+    params: {
+      name: "",
+      bookId: "GEN",
+      ref: "7:11",
+      quote: "בִּ⁠שְׁנַ֨ת שֵׁשׁ־מֵא֤וֹת שָׁנָה֙ לְ⁠חַיֵּי נֹ֔חַ",
+    },
+    expected: "and every living creature that moves",
+  },
+  {
+    params: {
+      name: "",
+      bookId: "GEN",
+      ref: "1:21",
+      quote: "וְ⁠אֵ֣ת כָּל נֶ֣פֶשׁ הַֽ⁠חַיָּ֣ה הָֽ⁠רֹמֶ֡שֶׂת",
+    },
+    expected: "and every living creature that moves",
+  },
+  {
+    params: {
+      name: "",
+      bookId: "GEN",
+      ref: "1:3",
+      quote: "וַֽ⁠יְהִי אֽוֹר",
+    },
+    expected: "And there was light",
+  },
+  {
+    params: {
+      name: "",
       bookId: "GEN",
       ref: "1:3",
       quote: "וַֽ⁠יְהִי אֽוֹר",
@@ -74,15 +110,6 @@ const tests = [
       quote: "וָ⁠אַצִּ֥ל אֶתְ⁠כֶ֖ם מִ⁠יָּדֽ⁠וֹ",
     },
     expected: "and I rescued you from his hand",
-  },
-  {
-    params: {
-      name: "",
-      bookId: "JOS",
-      ref: "21:27",
-      quote: "אֶת־גּוֹלָ֤ן & בְּעֶשְׁתְּרָ֖ה",
-    },
-    expected: "Golan & Be Eshterah",
   },
   {
     params: {

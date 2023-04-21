@@ -34,15 +34,34 @@ export function cleanQuoteString(quote) {
   );
 }
 
-export function tokenizeQuote(quote, isOrigLang = false) {
+export function tokenizer(quote, isOrigLang = false) {
   if (isOrigLang) {
     return tokenizeOrigLang({
       text: quote,
-      includePunctuation: true,
+      includePunctuation: false,
+      normalize: true,
     });
   } else {
-    return tokenize({ text: quote, includePunctuation: true });
+    return tokenize({
+      text: quote,
+      includePunctuation: false,
+      normalize: true,
+    });
   }
+}
+
+export function tokenizeQuote(quote, isOrigLang = true) {
+  const cleanQuote = cleanQuoteString(quote);
+  const quotesArray = cleanQuote
+    .split(/\s?&\s?/)
+    .flatMap((partialQuote) => tokenizer(partialQuote, isOrigLang).concat("&"))
+    .slice(0, -1);
+  return quotesArray;
+}
+
+function normalize(str = "", isOrigLang = false) {
+  const tokens = tokenizeQuote(str, isOrigLang).join(" ").trim();
+  return tokens.normalize("NFKC");
 }
 
 /**
@@ -83,8 +102,7 @@ export function getTargetQuotesFromOrigWords({
         isMatch ||
         wordObjects.find((item) => {
           return (
-            verseObject.content?.normalize("NFKC") ===
-              item.text?.normalize("NFKC") &&
+            normalize(verseObject.content) === normalize(item.text) &&
             verseObject.occurrence === item.occurrence
           );
         })
@@ -193,22 +211,21 @@ export function getQuoteMatchesInBookRef({
     };
   };
 
-  quote = cleanQuoteString(quote);
   const quoteTokens = tokenizeQuote(quote, isOrigLang);
 
   const book = setBook(bookObject, ref);
   let sourceArray = [];
   book.forEachVerse((verseObjects, verseRef) => {
     const tokensMap = quoteTokens.reduce((tokensMap, word) => {
-      tokensMap.set(word.normalize("NFKC"), { count: 0 });
+      tokensMap.set(normalize(word), { count: 0 });
       return tokensMap;
     }, new Map());
 
     sourceArray.push(
       verseObjectsToString(verseObjects, (word) => {
-        const _word = word.normalize("NFKC").trim();
+        const _word = normalize(word);
         const quote = tokensMap.get(_word);
-        if (!quote) return word;
+        if (!quote) return !_word ? " " : _word;
         quote.count++;
         return joinWordData(_word, verseRef, quote.count);
       })
@@ -223,8 +240,8 @@ export function getQuoteMatchesInBookRef({
     const AFTER =
       quoteTokens[index + 1] && quoteTokens[index + 1] === QUOTE_ELLIPSIS
         ? ""
-        : `(?:(?: ׀ )|\\s|־)?`;
-    const escaped = XRegExp.escape(token.normalize("NFKC"));
+        : `\\s?`;
+    const escaped = XRegExp.escape(normalize(token));
     const regexp = XRegExp(
       `(${escaped}${enclose(
         `${REF_PATTERN}${XRegExp.escape("|")}${OCCURRENCE_PATTERN}`
