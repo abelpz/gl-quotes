@@ -1,7 +1,7 @@
 {
   "name": "uw-quote-helpers",
   "description": "An open component package for generating target quotes from an aligned Bible.",
-  "version": "0.0.1-beta.23",
+  "version": "1.0.0",
   "homepage": "",
   "license": "MIT",
   "repository": {
@@ -13,8 +13,7 @@
     "build:guide": "npx styleguidist build && mv styleguide build",
     "build": "vite build",
     "test": "set NODE_OPTIONS=--experimental-vm-modules && yarn jest",
-    "sections": "node styleguide.sections.js",
-    "preinstall": "npx only-allow pnpm"
+    "sections": "node styleguide.sections.js"
   },
   "peerDependencies": {
     "usfm-js": "^3.4.2"
