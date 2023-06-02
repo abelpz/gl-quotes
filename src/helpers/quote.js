@@ -59,9 +59,9 @@ export function tokenizeQuote(quote, isOrigLang = true) {
   return quotesArray;
 }
 
-function normalize(str = "", isOrigLang = false) {
+export function normalize(str = "", isOrigLang = false) {
   const tokens = tokenizeQuote(str, isOrigLang).join(" ").trim();
-  return tokens.normalize("NFKC");
+  return tokens;
 }
 
 /**

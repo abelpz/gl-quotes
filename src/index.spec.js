@@ -88,8 +88,8 @@ const tests = [
     params: {
       name: "",
       bookId: "PSA",
-      ref: "1:1",
-      quote: "אַ֥שְֽׁרֵי",
+      ref: "6:8-9",
+      quote: "יְ֝הוָ֗ה & יְ֭הוָה & יְ֝הוָ֗ה",
     },
     expected: "Happy",
   },
@@ -161,7 +161,7 @@ describe("Find quotes", () => {
   test.each(tests)(
     `REF: "$params.bookId $params.ref" | EXPECTED: "$expected"`,
     ({ params, expected }) => {
-      const { bookId, ref, quote } = params;
+      const { bookId, ref, quote, occurrence } = params;
 
       const targetBook = targetBooks[bookId] ?? getTargetBook(bookId);
       const sourceBook = sourceBooks[bookId] ?? getSourceBook(bookId);
@@ -171,7 +171,7 @@ describe("Find quotes", () => {
         ref,
         bookObject: sourceBook,
         isOrigLang: true,
-        occurrence: -1,
+        occurrence: occurrence ?? -1,
       });
 
       const targetQuotes = getTargetQuoteFromWords({

@@ -1,7 +1,7 @@
 {
   "name": "uw-quote-helpers",
   "description": "An open component package for generating target quotes from an aligned Bible.",
-  "version": "0.0.1-beta.20",
+  "version": "0.0.1-beta.22",
   "homepage": "",
   "license": "MIT",
   "repository": {
@@ -27,6 +27,7 @@
   },
   "devDependencies": {
     "@babel/cli": "^7.21.0",
+    "node-fetch": "^3.3.1",
     "@babel/core": "^7.21.0",
     "@babel/plugin-proposal-nullish-coalescing-operator": "^7.18.6",
     "@babel/preset-env": "^7.20.2",
