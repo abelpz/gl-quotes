@@ -1,44 +1,40 @@
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "url";
-import { dirname } from "path";
-
 import {
-  getParsedUSFM,
   getQuoteMatchesInBookRef,
   getTargetQuoteFromWords,
 } from "../src/";
-
-const targetBooks = {};
-const sourceBooks = {};
-
-function getTargetBook(bookId) {
-  const targetUsfm = fs.readFileSync(
-    path.join(__dirname, "../examples/data/", `${bookId}-target.usfm`),
-    "utf8"
-  );
-  const targetBook = getParsedUSFM(targetUsfm).chapters;
-  targetBooks[bookId] = targetBook;
-  return targetBook;
-}
-
-function getSourceBook(bookId) {
-  const sourceUsfm = fs.readFileSync(
-    path.join(__dirname, "../examples/data/", `${bookId}-source.usfm`),
-    "utf8"
-  );
-  const sourceBook = getParsedUSFM(sourceUsfm).chapters;
-  sourceBooks[bookId] = sourceBook;
-  return sourceBook;
-}
-
-// Get the URL of the current module
-const __filename = fileURLToPath(import.meta.url);
-
-// Get the directory name of the current module
-const __dirname = dirname(__filename);
+import { getTargetBook, getSourceBook } from "../examples/getBook";
 
 const tests = [
+  {
+    params: {
+      name: "",
+      bookId: "TIT",
+      ref: "1:4,9",
+      quote: "καὶ & καὶ",
+      occurrence: 2,
+    },
+    expected: "both & and",
+  },
+  {
+    params: {
+      name: "Middle word not being highlighted",
+      bookId: "PSA",
+      ref: "6:8-9",
+      quote: "יְ֝הוָ֗ה & יְ֭הוָה & יְ֝הוָ֗ה",
+    },
+    expected: "Yahweh & Yahweh & Yahweh",
+  },
+  {
+    params: {
+      name: "Testing deuteronomy highlighting error",
+      bookId: "DEU",
+      ref: "1:5-6",
+      quote:
+        "מֹשֶׁ֔ה בֵּאֵ֛ר אֶת־הַ⁠תּוֹרָ֥ה הַ⁠זֹּ֖את לֵ⁠אמֹֽר׃ & יְהוָ֧ה אֱלֹהֵ֛י⁠נוּ דִּבֶּ֥ר אֵלֵ֖י⁠נוּ בְּ⁠חֹרֵ֣ב לֵ⁠אמֹ֑ר",
+    },
+    expected:
+      "Moses & explaining this law, saying & Yahweh our God spoke to us at Horeb, saying",
+  },
   {
     params: {
       name: "",
@@ -91,7 +87,7 @@ const tests = [
       ref: "6:8-9",
       quote: "יְ֝הוָ֗ה & יְ֭הוָה & יְ֝הוָ֗ה",
     },
-    expected: "Happy",
+    expected: "Yahweh & Yahweh & Yahweh",
   },
   {
     params: {
@@ -160,18 +156,18 @@ const tests = [
 describe("Find quotes", () => {
   test.each(tests)(
     `REF: "$params.bookId $params.ref" | EXPECTED: "$expected"`,
-    ({ params, expected }) => {
-      const { bookId, ref, quote, occurrence } = params;
+    async ({ params, expected }) => {
+      const { bookId, ref, quote, occurrence = -1 } = params;
 
-      const targetBook = targetBooks[bookId] ?? getTargetBook(bookId);
-      const sourceBook = sourceBooks[bookId] ?? getSourceBook(bookId);
+      const targetBook = await getTargetBook(bookId, true);
+      const sourceBook = await getSourceBook(bookId, true);
 
       const quoteMatches = getQuoteMatchesInBookRef({
         quote,
         ref,
         bookObject: sourceBook,
         isOrigLang: true,
-        occurrence: occurrence ?? -1,
+        occurrence,
       });
 
       const targetQuotes = getTargetQuoteFromWords({

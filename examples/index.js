@@ -8,12 +8,22 @@ import { getTargetBook, getSourceBook } from "./getBook";
 const tests = [
   {
     params: {
-      name: "Middle word not being highlighted",
+      name: "",
       bookId: "TIT",
-      ref: "1:3",
-      quote: "τοῦ Σωτῆρος ἡμῶν, Θεοῦ",
+      ref: "1:4,9",
+      quote: "καὶ & καὶ",
+      occurrence: 2,
     },
-    expected: "Happy",
+    expected: "both & and",
+  },
+  {
+    params: {
+      name: "Middle word not being highlighted",
+      bookId: "PSA",
+      ref: "6:8-9",
+      quote: "יְ֝הוָ֗ה & יְ֭הוָה & יְ֝הוָ֗ה",
+    },
+    expected: "Yahweh & Yahweh & Yahweh",
   },
   {
     params: {
@@ -23,16 +33,8 @@ const tests = [
       quote:
         "מֹשֶׁ֔ה בֵּאֵ֛ר אֶת־הַ⁠תּוֹרָ֥ה הַ⁠זֹּ֖את לֵ⁠אמֹֽר׃ & יְהוָ֧ה אֱלֹהֵ֛י⁠נוּ דִּבֶּ֥ר אֵלֵ֖י⁠נוּ בְּ⁠חֹרֵ֣ב לֵ⁠אמֹ֑ר",
     },
-    expected: "Happy",
-  },
-  {
-    params: {
-      name: "Middle word not being highlighted",
-      bookId: "PSA",
-      ref: "6:8-9",
-      quote: "יְ֝הוָ֗ה & יְ֭הוָה & יְ֝הוָ֗ה",
-    },
-    expected: "Happy",
+    expected:
+      "Moses & explaining this law, saying & Yahweh our God spoke to us at Horeb, saying",
   },
   // {
   //   params: {
@@ -162,7 +164,7 @@ const tests = [
 ];
 
 tests.forEach(async ({ params, expected }) => {
-  const { bookId, ref, quote } = params;
+  const { bookId, ref, quote, occurrence = -1 } = params;
 
   const targetBook = await getTargetBook(bookId, true);
   const sourceBook = await getSourceBook(bookId, true);
@@ -172,7 +174,7 @@ tests.forEach(async ({ params, expected }) => {
     ref,
     bookObject: sourceBook,
     isOrigLang: true,
-    occurrence: -1,
+    occurrence,
   });
 
   const targetQuotes = getTargetQuoteFromWords({
