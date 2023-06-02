@@ -281,7 +281,7 @@ export function getQuoteMatchesInBookRef({
         },
         []
       );
-      matches = matches.concat(currentMatches);
+      if (currentMatches.length) matches.push(currentMatches);
       if (iteration === limit) {
         keepSearching = false;
         console.log("limit reached");
@@ -293,7 +293,7 @@ export function getQuoteMatchesInBookRef({
 
   const matches = searchQuotes(sourceString, searchPatterns);
 
-  const foundOccurrences = [matches].reduce((occurrences, words, key) => {
+  const foundOccurrences = matches.reduce((occurrences, words, key) => {
     const currentOccurence = key + 1;
     if (occurrence !== -1 && currentOccurence !== occurrence)
       return occurrences;
