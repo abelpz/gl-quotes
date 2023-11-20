@@ -2,6 +2,7 @@ import { tokenize, tokenizeOrigLang } from "string-punctuation-tokenizer";
 import { DEFAULT_SEPARATOR, QUOTE_ELLIPSIS } from "../utils/consts";
 import { refToString, setBook, verseObjectsToString } from "./scripture";
 import { doesReferenceContain } from "bible-reference-range";
+import XRegExp from "xregexp";
 
 export function cleanQuoteString(quote) {
   return (
@@ -29,15 +30,38 @@ export function cleanQuoteString(quote) {
       .trim()
       .replace(/ *\... */g, ` ${QUOTE_ELLIPSIS} `)
       .replace(/ *… */gi, ` ${QUOTE_ELLIPSIS} `)
+      .replaceAll(/\\n|\\r/g, "")
   );
 }
 
-export function tokenizeQuote(quote, isOrigLang = false) {
+export function tokenizer(quote, isOrigLang = false) {
   if (isOrigLang) {
-    return tokenizeOrigLang({ text: quote, includePunctuation: true });
+    return tokenizeOrigLang({
+      text: quote,
+      includePunctuation: false,
+      normalize: true,
+    });
   } else {
-    return tokenize({ text: quote, includePunctuation: true });
+    return tokenize({
+      text: quote,
+      includePunctuation: false,
+      normalize: true,
+    });
   }
+}
+
+export function tokenizeQuote(quote, isOrigLang = true) {
+  const cleanQuote = cleanQuoteString(quote);
+  const quotesArray = cleanQuote
+    .split(/\s?&\s?/)
+    .flatMap((partialQuote) => tokenizer(partialQuote, isOrigLang).concat("&"))
+    .slice(0, -1);
+  return quotesArray;
+}
+
+export function normalize(str = "", isOrigLang = false) {
+  const tokens = tokenizeQuote(str, isOrigLang).join(" ").trim();
+  return tokens;
 }
 
 /**
@@ -68,15 +92,20 @@ export function getTargetQuotesFromOrigWords({
     const verseObject = verseObjects[i];
     let lastMatch = false;
 
-    if (verseObject.type === "milestone" || verseObject.type === "word") {
+    if (
+      verseObject.type === "milestone" ||
+      verseObject.type === "word" ||
+      verseObject.type === "quote"
+    ) {
       // It is a milestone or a word...we want to handle all of them.
       if (
         isMatch ||
-        wordObjects.find(
-          (item) =>
-            verseObject.content === item.text &&
+        wordObjects.find((item) => {
+          return (
+            normalize(verseObject.content) === normalize(item.text) &&
             verseObject.occurrence === item.occurrence
-        )
+          );
+        })
       ) {
         lastMatch = true;
 
@@ -155,9 +184,12 @@ export function getQuoteMatchesInBookRef({
   isOrigLang,
   occurrence = -1,
 }) {
+  if (occurrence === 0) return new Map();
   const DATA_SEPARATOR = "|";
   const OPEN_CHAR = "{";
   const CLOSE_CHAR = "}";
+  const REF_PATTERN = "\\d+:\\d+";
+  const OCCURRENCE_PATTERN = "\\d+";
   const enclose = (word) => OPEN_CHAR + word + CLOSE_CHAR;
 
   const joinWordData = (word, refObject, occurrence) => {
@@ -179,49 +211,101 @@ export function getQuoteMatchesInBookRef({
     };
   };
 
-  quote = cleanQuoteString(quote);
   const quoteTokens = tokenizeQuote(quote, isOrigLang);
 
   const book = setBook(bookObject, ref);
   let sourceArray = [];
   book.forEachVerse((verseObjects, verseRef) => {
     const tokensMap = quoteTokens.reduce((tokensMap, word) => {
-      tokensMap.set(word, { count: 0 });
+      tokensMap.set(normalize(word), { count: 0 });
       return tokensMap;
     }, new Map());
 
     sourceArray.push(
       verseObjectsToString(verseObjects, (word) => {
-        const quote = tokensMap.get(word);
-        if (!quote) return word;
+        const _word = normalize(word);
+        const quote = tokensMap.get(_word);
+        if (!quote) return !_word ? " " : _word;
         quote.count++;
-        return joinWordData(word, verseRef, quote.count);
+        return joinWordData(_word, verseRef, quote.count);
       })
     );
   });
   const sourceString = sourceArray.join("\n");
-  const searchPatterns = quoteTokens.map((token) => {
-    if (token === QUOTE_ELLIPSIS) return `(?:.*?).*?`;
-    return `(${token}${enclose(".+?")}).*?`;
-  });
-  const regexp = new RegExp(searchPatterns.join(""), "g");
-  const foundOccurrences = Array.from(sourceString.matchAll(regexp)).reduce(
-    (occurrences, match, key) => {
-      const currentOccurence = key + 1;
-      if (occurrence !== -1 && currentOccurence !== occurrence)
-        return occurrences;
-      const words = match.slice(1);
-      words.forEach((_word) => {
-        const { chapter, verse, ...wordObject } = splitWordData(_word);
-        const refString = refToString({ chapter, verse });
-        const currentWordsInRef = occurrences.get(refString);
-        if (currentWordsInRef) currentWordsInRef.push(wordObject);
-        else occurrences.set(refString, [wordObject]);
-      });
+
+  const searchPatterns = quoteTokens.reduce((patterns, token, index) => {
+    if (token === QUOTE_ELLIPSIS) return patterns;
+    const push =
+      (patterns.length === 0) | (quoteTokens[index - 1] === QUOTE_ELLIPSIS);
+    const AFTER =
+      quoteTokens[index + 1] && quoteTokens[index + 1] === QUOTE_ELLIPSIS
+        ? ""
+        : `\\s?`;
+    const escaped = XRegExp.escape(normalize(token));
+    const regexp = XRegExp(
+      `(${escaped}${enclose(
+        `${REF_PATTERN}${XRegExp.escape("|")}${OCCURRENCE_PATTERN}`
+      )})${AFTER}`
+    );
+
+    if (push) {
+      patterns.push(regexp);
+      return patterns;
+    }
+
+    const current = patterns.length - 1;
+    patterns[current] = XRegExp.union([patterns[current], regexp], "g", {
+      conjunction: "none",
+    });
+    return patterns;
+  }, []);
+
+  const searchQuotes = (source, patterns) => {
+    let keepSearching = true;
+    let matches = [];
+    let limit = 100;
+    let iteration = 0;
+    let index = 0;
+    while (keepSearching) {
+      const currentMatches = patterns.reduce(
+        // eslint-disable-next-line no-loop-func
+        (currentMatches, regexp, i, matches) => {
+          const match = XRegExp.exec(source, regexp, index);
+          if (match) {
+            index = match.index + match[0].length;
+            return currentMatches.concat(match.slice(1));
+          }
+          keepSearching = false;
+          matches.length = 0;
+          return [];
+        },
+        []
+      );
+      if (currentMatches.length) matches.push(currentMatches);
+      if (iteration === limit) {
+        keepSearching = false;
+        console.log("limit reached");
+      }
+      iteration++;
+    }
+    return matches;
+  };
+
+  const matches = searchQuotes(sourceString, searchPatterns);
+
+  const foundOccurrences = matches.reduce((occurrences, words, key) => {
+    const currentOccurence = key + 1;
+    if (occurrence !== -1 && currentOccurence !== occurrence)
       return occurrences;
-    },
-    new Map()
-  );
+    words.forEach((_word) => {
+      const { chapter, verse, ...wordObject } = splitWordData(_word);
+      const refString = refToString({ chapter, verse });
+      const currentWordsInRef = occurrences.get(refString);
+      if (currentWordsInRef) currentWordsInRef.push(wordObject);
+      else occurrences.set(refString, [wordObject]);
+    });
+    return occurrences;
+  }, new Map());
   return foundOccurrences;
 }
 

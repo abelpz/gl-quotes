@@ -1,7 +1,7 @@
 {
   "name": "uw-quote-helpers",
   "description": "An open component package for generating target quotes from an aligned Bible.",
-  "version": "0.0.1-beta.8",
+  "version": "1.0.0",
   "homepage": "",
   "license": "MIT",
   "repository": {
@@ -13,8 +13,7 @@
     "build:guide": "npx styleguidist build && mv styleguide build",
     "build": "vite build",
     "test": "set NODE_OPTIONS=--experimental-vm-modules && yarn jest",
-    "sections": "node styleguide.sections.js",
-    "preinstall": "npx only-allow pnpm"
+    "sections": "node styleguide.sections.js"
   },
   "peerDependencies": {
     "usfm-js": "^3.4.2"
@@ -27,9 +26,12 @@
   },
   "devDependencies": {
     "@babel/cli": "^7.21.0",
+    "node-fetch": "^3.3.1",
     "@babel/core": "^7.21.0",
+    "@babel/plugin-proposal-nullish-coalescing-operator": "^7.18.6",
     "@babel/preset-env": "^7.20.2",
     "@jest/transform": "^29.5.0",
+    "@rollup/plugin-babel": "^6.0.3",
     "@types/jest": "^29.4.1",
     "babel-loader": "^8.2.2",
     "crypto-browserify": "^3.12.0",
@@ -44,16 +46,16 @@
     "vite": "^4.1.4",
     "webpack-cli": "^4.10.0"
   },
-  "type": "commonjs",
+  "type": "module",
   "files": [
     "dist"
   ],
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
   "exports": {
     ".": {
-      "require": "./dist/index.js",
-      "import": "./dist/index.mjs"
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js"
     }
   },
   "eslintConfig": {
@@ -64,7 +66,7 @@
   },
   "browserslist": {
     "production": [
-      ">0.2%",
+      ">0.25%",
       "not dead",
       "not op_mini all"
     ],
