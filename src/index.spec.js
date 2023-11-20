@@ -8,6 +8,26 @@ const tests = [
   {
     params: {
       name: "",
+      bookId: "2JN",
+      ref: "1:2",
+      quote: "καὶ μεθ’ ἡμῶν ἔσται",
+      occurrence: 1,
+    },
+    expected: "and will be with us",
+  },
+  {
+    params: {
+      name: "",
+      bookId: "2JN",
+      ref: "1:2",
+      quote: "μεθ’ ἡμῶν",
+      occurrence: 1,
+    },
+    expected: "with us",
+  },
+  {
+    params: {
+      name: "",
       bookId: "TIT",
       ref: "1:4,9",
       quote: "καὶ & καὶ",

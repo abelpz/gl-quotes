@@ -12,7 +12,7 @@
     "start": "npx styleguidist server --port=3030",
     "build:guide": "npx styleguidist build && mv styleguide build",
     "build": "vite build",
-    "test": "set NODE_OPTIONS=--experimental-vm-modules && yarn jest",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "sections": "node styleguide.sections.js"
   },
   "peerDependencies": {
