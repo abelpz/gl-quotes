@@ -2,6 +2,7 @@ import {
   getQuoteMatchesInBookRef,
   getTargetQuoteFromWords,
 } from "../src/";
+import { normalize } from "./helpers/quote.js";
 import { getTargetBook, getSourceBook } from "../examples/getBook";
 
 const tests = [
@@ -14,6 +15,24 @@ const tests = [
       occurrence: 1,
     },
     expected: "and will be with us",
+    expectedSelections: [
+      {
+        "text": "καὶ",
+        "occurrence": 1
+      },
+      {
+        "text": "μεθ’",
+        "occurrence": 1
+      },
+      {
+        "text": "ἡμῶν",
+        "occurrence": 1
+      },
+      {
+        "text": "ἔσται",
+        "occurrence": 1
+      },
+    ],
   },
   {
     params: {
@@ -24,6 +43,36 @@ const tests = [
       occurrence: 1,
     },
     expected: "with us",
+    expectedSelections: [
+      {
+        "text": "μεθ’",
+        "occurrence": 1
+      },
+      {
+        "text": "ἡμῶν",
+        "occurrence": 1
+      },
+    ],
+  },
+  {
+    params: {
+      name: "",
+      bookId: "2JN",
+      ref: "1:2",
+      quote: "καὶ μεθ’",
+      occurrence: 1,
+    },
+    expected: "and & with",
+    expectedSelections: [
+      {
+        "text": "καὶ",
+        "occurrence": 1
+      },
+      {
+        "text": "μεθ’",
+        "occurrence": 1
+      },
+    ],
   },
   {
     params: {
@@ -176,7 +225,7 @@ const tests = [
 describe("Find quotes", () => {
   test.each(tests)(
     `REF: "$params.bookId $params.ref" | EXPECTED: "$expected"`,
-    async ({ params, expected }) => {
+    async ({ params, expected, expectedSelections }) => {
       const { bookId, ref, quote, occurrence = -1 } = params;
 
       const targetBook = await getTargetBook(bookId, true);
@@ -196,6 +245,14 @@ describe("Find quotes", () => {
       });
 
       expect(targetQuotes).toEqual(expected);
+      if (expectedSelections) {
+        const selections = quoteMatches.get(ref);
+        const _expectedSelections = expectedSelections.map(item => ({
+          ...item,
+          text: normalize(item.text, true),
+        }))
+        expect(selections).toEqual(_expectedSelections)
+      }
     }
   );
 });
