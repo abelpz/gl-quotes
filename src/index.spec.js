@@ -245,8 +245,9 @@ describe("Find quotes", () => {
       });
 
       expect(targetQuotes).toEqual(expected);
-      if (expectedSelections) {
+      if (expectedSelections) { // if given then also verify the selections are expected
         const selections = quoteMatches.get(ref);
+        // normalize the expected selections
         const _expectedSelections = expectedSelections.map(item => ({
           ...item,
           text: normalize(item.text, true),

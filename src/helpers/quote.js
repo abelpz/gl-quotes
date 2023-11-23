@@ -52,15 +52,15 @@ export function tokenizer(quote, isOrigLang = false) {
 
 export function tokenizeQuote(quote, isOrigLang = true) {
   const cleanQuote = cleanQuoteString(quote);
-  let fragments = cleanQuote.split(/\s?&\s?/);
-  let flattened = fragments.flatMap((partialQuote) => tokenizer(partialQuote, isOrigLang).concat("&"));
-  const quotesArray = flattened.slice(0, -1);
+  const quotesArray = cleanQuote
+    .split(/\s?&\s?/)
+    .flatMap((partialQuote) => tokenizer(partialQuote, isOrigLang).concat("&"))
+    .slice(0, -1);
   return quotesArray;
 }
 
 export function normalize(str = "", isOrigLang = false) {
-  let tokenized = tokenizeQuote(str, isOrigLang);
-  const tokens = tokenized.join(" ").trim();
+  const tokens = tokenizeQuote(str, isOrigLang).join(" ").trim();
   return tokens;
 }
 
