@@ -2,9 +2,78 @@ import {
   getQuoteMatchesInBookRef,
   getTargetQuoteFromWords,
 } from "../src/";
+import { normalize } from "./helpers/quote.js";
 import { getTargetBook, getSourceBook } from "../examples/getBook";
 
 const tests = [
+  {
+    params: {
+      name: "",
+      bookId: "2JN",
+      ref: "1:2",
+      quote: "καὶ μεθ’ ἡμῶν ἔσται",
+      occurrence: 1,
+    },
+    expected: "and will be with us",
+    expectedSelections: [
+      {
+        "text": "καὶ",
+        "occurrence": 1
+      },
+      {
+        "text": "μεθ’",
+        "occurrence": 1
+      },
+      {
+        "text": "ἡμῶν",
+        "occurrence": 1
+      },
+      {
+        "text": "ἔσται",
+        "occurrence": 1
+      },
+    ],
+  },
+  {
+    params: {
+      name: "",
+      bookId: "2JN",
+      ref: "1:2",
+      quote: "μεθ’ ἡμῶν",
+      occurrence: 1,
+    },
+    expected: "with us",
+    expectedSelections: [
+      {
+        "text": "μεθ’",
+        "occurrence": 1
+      },
+      {
+        "text": "ἡμῶν",
+        "occurrence": 1
+      },
+    ],
+  },
+  {
+    params: {
+      name: "",
+      bookId: "2JN",
+      ref: "1:2",
+      quote: "καὶ μεθ’",
+      occurrence: 1,
+    },
+    expected: "and & with",
+    expectedSelections: [
+      {
+        "text": "καὶ",
+        "occurrence": 1
+      },
+      {
+        "text": "μεθ’",
+        "occurrence": 1
+      },
+    ],
+  },
   {
     params: {
       name: "",
@@ -156,7 +225,7 @@ const tests = [
 describe("Find quotes", () => {
   test.each(tests)(
     `REF: "$params.bookId $params.ref" | EXPECTED: "$expected"`,
-    async ({ params, expected }) => {
+    async ({ params, expected, expectedSelections }) => {
       const { bookId, ref, quote, occurrence = -1 } = params;
 
       const targetBook = await getTargetBook(bookId, true);
@@ -176,6 +245,15 @@ describe("Find quotes", () => {
       });
 
       expect(targetQuotes).toEqual(expected);
+      if (expectedSelections) { // if given then also verify the selections are expected
+        const selections = quoteMatches.get(ref);
+        // normalize the expected selections
+        const _expectedSelections = expectedSelections.map(item => ({
+          ...item,
+          text: normalize(item.text, true),
+        }))
+        expect(selections).toEqual(_expectedSelections)
+      }
     }
   );
 });

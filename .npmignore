@@ -1,0 +1,11 @@
+.editorconfig
+.idea/
+.yalc/
+coverage/
+docs/
+examples/
+node_modules/
+src/
+styleguide.config.js
+styleguide.styles.js
+yalc.lock

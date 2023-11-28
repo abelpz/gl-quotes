@@ -217,13 +217,13 @@ export function getQuoteMatchesInBookRef({
   let sourceArray = [];
   book.forEachVerse((verseObjects, verseRef) => {
     const tokensMap = quoteTokens.reduce((tokensMap, word) => {
-      tokensMap.set(normalize(word), { count: 0 });
+      tokensMap.set(normalize(word, true), { count: 0 });
       return tokensMap;
     }, new Map());
 
     sourceArray.push(
       verseObjectsToString(verseObjects, (word) => {
-        const _word = normalize(word);
+        const _word = normalize(word, true);
         const quote = tokensMap.get(_word);
         if (!quote) return !_word ? " " : _word;
         quote.count++;
@@ -241,7 +241,7 @@ export function getQuoteMatchesInBookRef({
       quoteTokens[index + 1] && quoteTokens[index + 1] === QUOTE_ELLIPSIS
         ? ""
         : `\\s?`;
-    const escaped = XRegExp.escape(normalize(token));
+    const escaped = XRegExp.escape(normalize(token, true));
     const regexp = XRegExp(
       `(${escaped}${enclose(
         `${REF_PATTERN}${XRegExp.escape("|")}${OCCURRENCE_PATTERN}`
