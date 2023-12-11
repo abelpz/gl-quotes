@@ -1,12 +1,12 @@
 {
   "name": "uw-quote-helpers",
   "description": "An open component package for generating target quotes from an aligned Bible.",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "homepage": "",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/"
+    "url": "https://github.com/unfoldingWord/uw-quote-helpers"
   },
   "scripts": {
     "start": "npx styleguidist server --port=3030",
@@ -19,9 +19,9 @@
     "usfm-js": "^3.4.2"
   },
   "dependencies": {
-    "bible-reference-range": "^1.1.0",
+    "bible-reference-range": "^1.1.1",
     "string-punctuation-tokenizer": "^2.2.0",
-    "tsv-groupdata-parser": "1.1.0-beta.4",
+    "tsv-groupdata-parser": "^1.1.0",
     "xregexp": "^5.1.1"
   },
   "devDependencies": {
