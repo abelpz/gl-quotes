@@ -240,7 +240,7 @@ export function getQuoteMatchesInBookRef({
     const AFTER =
       quoteTokens[index + 1] && quoteTokens[index + 1] === QUOTE_ELLIPSIS
         ? ""
-        : `\\s?`;
+        : `\\s*`;
     const escaped = XRegExp.escape(normalize(token, true));
     const regexp = XRegExp(
       `(${escaped}${enclose(
