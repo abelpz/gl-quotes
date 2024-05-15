@@ -16,7 +16,7 @@ const tests = [
     },
     only: true,
     expected:
-      "You will do well to send them on in a manner worthy of God & because they went out for the sake of the name, receiving nothing from the Gentiles",
+      "whom you will do well to send on worthily of God & for they went out for the sake of the name, receiving nothing from the Gentiles",
   },
   {
     params: {
