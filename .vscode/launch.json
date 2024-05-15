@@ -11,6 +11,27 @@
       "skipFiles": ["<node_internals>/**"],
       "program": "${workspaceFolder}\\examples\\index.js",
       "runtimeArgs": ["--experimental-specifier-resolution=node"]
+    },
+    {
+      "type": "node",
+      "name": "vscode-jest-tests.v2.uw-quote-helpers",
+      "request": "launch",
+      "args": [
+        "test",
+        "--runTestsByPath",
+        "${jest.testFile}",
+        "--config",
+        "jest.config.js"
+      ],
+      "console": "integratedTerminal",
+      "internalConsoleOptions": "neverOpen",
+      "windows": {
+        "program": "${workspaceFolder}/node_modules/jest/bin/jest"
+      },
+      "runtimeArgs": [
+        "--experimental-specifier-resolution=node",
+        "--experimental-vm-modules"
+      ]
     }
   ]
 }

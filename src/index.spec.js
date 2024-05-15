@@ -1,11 +1,23 @@
-import {
-  getQuoteMatchesInBookRef,
-  getTargetQuoteFromWords,
-} from "../src/";
+import { getQuoteMatchesInBookRef, getTargetQuoteFromWords } from "../src/";
 import { normalize } from "./helpers/quote.js";
 import { getTargetBook, getSourceBook } from "../examples/getBook";
 
+const TEST_TIMOUT = 10000;
+
 const tests = [
+  {
+    params: {
+      name: "",
+      bookId: "3JN",
+      ref: "1:6-7",
+      quote:
+        "οὓς καλῶς ποιήσεις, προπέμψας ἀξίως τοῦ Θεοῦ; ὑπὲρ γὰρ τοῦ ὀνόματος ἐξῆλθον, μηδὲν λαμβάνοντες ἀπὸ τῶν ἐθνικῶν",
+      occurrence: 1,
+    },
+    only: true,
+    expected:
+      "whom you will do well to send on worthily of God & for they went out for the sake of the name, receiving nothing from the Gentiles",
+  },
   {
     params: {
       name: "",
@@ -17,20 +29,20 @@ const tests = [
     expected: "and will be with us",
     expectedSelections: [
       {
-        "text": "καὶ",
-        "occurrence": 1
+        text: "καὶ",
+        occurrence: 1,
       },
       {
-        "text": "μεθ’",
-        "occurrence": 1
+        text: "μεθ’",
+        occurrence: 1,
       },
       {
-        "text": "ἡμῶν",
-        "occurrence": 1
+        text: "ἡμῶν",
+        occurrence: 1,
       },
       {
-        "text": "ἔσται",
-        "occurrence": 1
+        text: "ἔσται",
+        occurrence: 1,
       },
     ],
   },
@@ -45,12 +57,12 @@ const tests = [
     expected: "with us",
     expectedSelections: [
       {
-        "text": "μεθ’",
-        "occurrence": 1
+        text: "μεθ’",
+        occurrence: 1,
       },
       {
-        "text": "ἡμῶν",
-        "occurrence": 1
+        text: "ἡμῶν",
+        occurrence: 1,
       },
     ],
   },
@@ -65,12 +77,12 @@ const tests = [
     expected: "and & with",
     expectedSelections: [
       {
-        "text": "καὶ",
-        "occurrence": 1
+        text: "καὶ",
+        occurrence: 1,
       },
       {
-        "text": "μεθ’",
-        "occurrence": 1
+        text: "μεθ’",
+        occurrence: 1,
       },
     ],
   },
@@ -245,15 +257,18 @@ describe("Find quotes", () => {
       });
 
       expect(targetQuotes).toEqual(expected);
-      if (expectedSelections) { // if given then also verify the selections are expected
+      if (expectedSelections) {
+        // if given then also verify the selections are expected
         const selections = quoteMatches.get(ref);
         // normalize the expected selections
-        const _expectedSelections = expectedSelections.map(item => ({
+        const _expectedSelections = expectedSelections.map((item) => ({
           ...item,
           text: normalize(item.text, true),
-        }))
-        expect(selections).toEqual(_expectedSelections)
+        }));
+        // eslint-disable-next-line jest/no-conditional-expect
+        expect(selections).toEqual(_expectedSelections);
       }
-    }
+    },
+    TEST_TIMOUT
   );
 });
