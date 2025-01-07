@@ -88,14 +88,21 @@ export async function getTargetBook(_bookId, shouldFetch = false) {
 
   const targetUsfm = !shouldFetch
     ? fs.readFileSync(
-      path.join(__dirname, "../examples/data/", `${bookId}-target.usfm`),
-      "utf8"
-    )
+        path.join(__dirname, "../examples/data/", `${bookId}-target.usfm`),
+        "utf8"
+      )
     : await fetch(
-      `https://git.door43.org/unfoldingWord/en_ult/raw/branch/master/${String(
-        bookNames[bookId]
-      ).padStart(2, "0")}-${bookId}.usfm`
-    ).then(r => r.text());
+        `https://git.door43.org/api/v1/repos/unfoldingword/en_ult/releases/latest?pre-release=false`
+      )
+        .then((r) => r.json())
+        .then(
+          async ({ tag_name: tag }) =>
+            await fetch(
+              `https://git.door43.org/unfoldingWord/en_ult/raw/tag/${tag}/${String(
+                bookNames[bookId]
+              ).padStart(2, "0")}-${bookId}.usfm`
+            ).then((r) => r.text())
+        );
   
   const targetBook = getParsedUSFM(targetUsfm).chapters;
   targetBooks[bookId] = targetBook;
@@ -105,12 +112,7 @@ export async function getSourceBook(_bookId, shouldFetch = false) {
   const bookId = _bookId.toUpperCase();
   if (sourceBooks[bookId])
     return sourceBooks[bookId];
-  const url = `https://git.door43.org/unfoldingWord/${
-    bookNames[bookId] < 40 ? "hbo_uhb" : "el-x-koine_ugnt"
-  }/raw/branch/master/${String(bookNames[bookId]).padStart(
-    2,
-    "0"
-    )}-${bookId}.usfm`;
+
   const sourceUsfm = !shouldFetch
     ? fs.readFileSync(
       path.join(__dirname, "../examples/data/", `${bookId}-source.usfm`),

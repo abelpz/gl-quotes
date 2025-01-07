@@ -260,7 +260,8 @@ export function getQuoteMatchesInBookRef({
     return patterns;
   }, []);
 
-  const searchQuotes = (source, patterns) => {
+  //SEARCH WHEN THERE IS ONLY ONE PATTERN OR WHEN WANTING TO FIND ALL OCCURRENCES OF EACH GROUP OF PATTERNS
+  const searchQuotesGroups = (source, patterns) => {
     let keepSearching = true;
     let matches = [];
     let limit = 100;
@@ -291,7 +292,71 @@ export function getQuoteMatchesInBookRef({
     return matches;
   };
 
-  const matches = searchQuotes(sourceString, searchPatterns);
+  //SEARCH WHEN WANTING TO FIND A SPECIFIC OCCURRENCE OF THE FIRST PATTERN, AND THEN FOLLOWING OCCURRENCES OF THE OTHER PATTERNS
+  const searchFirstQuoteAndFollowingQuotes = (source, patterns, occurrence) => {
+    // Early return for invalid inputs
+    if (!source || !patterns.length || occurrence < -1) {
+      return [];
+    }
+
+    const firstPattern = patterns[0];
+    const firstMatches = [];
+    let match;
+    let startIndex = 0;
+    const targetOccurrenceCount = occurrence;
+
+    // Only find occurrences up to target + 1 (to establish boundary)
+    while ((match = XRegExp.exec(source, firstPattern, startIndex)) !== null) {
+      firstMatches.push({
+        text: match[1],
+        index: match.index,
+        endIndex: match.index + match[0].length
+      });
+      startIndex = match.index + 1;
+
+      // Stop once we've found the occurrence after our target
+      if (firstMatches.length === targetOccurrenceCount) break;
+    }
+
+    // If we didn't find our target occurrence, return empty array
+    if (firstMatches.length < targetOccurrenceCount) {
+      return [];
+    }
+
+    const targetMatch = firstMatches[targetOccurrenceCount - 1];
+    const nextMatch = { index: source.length };
+    const result = firstMatches.map(match => [match.text]);
+    const lastMatch = result[result.length - 1];
+    
+    // Search for subsequent patterns between target occurrence and end of source
+    let currentIndex = targetMatch.endIndex;
+    const searchBoundary = nextMatch.index;
+
+    for (let i = 1; i < patterns.length; i++) {
+      const nextPatternMatch = XRegExp.exec(
+        source.slice(currentIndex, searchBoundary), 
+        patterns[i],
+        0
+      );
+      
+      if (!nextPatternMatch) return [];
+      
+      lastMatch.push(...nextPatternMatch.slice(1));
+      currentIndex += nextPatternMatch.index + nextPatternMatch[0].length;
+    }
+
+    return result;
+  };
+
+
+  const matches =
+    occurrence === -1 || searchPatterns.length === 1
+      ? searchQuotesGroups(sourceString, searchPatterns)
+      : searchFirstQuoteAndFollowingQuotes(
+          sourceString,
+          searchPatterns,
+          occurrence
+        );
 
   const foundOccurrences = matches.reduce((occurrences, words, key) => {
     const currentOccurence = key + 1;

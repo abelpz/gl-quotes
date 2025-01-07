@@ -7,6 +7,16 @@ const TEST_TIMOUT = 10000;
 const tests = [
   {
     params: {
+      name: "Test 1",
+      bookId: "JUD",
+      ref: "1:10",
+      quote: "ὅσα & φυσικῶς ὡς τὰ ἄλογα ζῷα ἐπίστανται",
+      occurrence: 2,
+    },
+    expected: "what they understand by instinct as the unreasoning animals",
+  },
+  {
+    params: {
       name: "",
       bookId: "3JN",
       ref: "1:6-7",
@@ -92,7 +102,7 @@ const tests = [
       bookId: "TIT",
       ref: "1:4,9",
       quote: "καὶ & καὶ",
-      occurrence: 2,
+      occurrence: 3,
     },
     expected: "both & and",
   },
@@ -186,7 +196,7 @@ const tests = [
       ref: "1:11",
       quote: "בְּ⁠ע֣וֹד׀ שְׁלֹ֣שֶׁת יָמִ֗ים",
     },
-    expected: "in yet three days",
+    expected: "within three days",
   },
   {
     params: {
@@ -256,7 +266,12 @@ describe("Find quotes", () => {
         wordsMap: quoteMatches,
       });
 
-      expect(targetQuotes).toEqual(expected);
+      try {
+        expect(targetQuotes).toEqual(expected);
+      } catch (e) {
+        console.log({ params, expected, received:targetQuotes, quoteMatches });
+        throw e;
+      }
       if (expectedSelections) {
         // if given then also verify the selections are expected
         const selections = quoteMatches.get(ref);
