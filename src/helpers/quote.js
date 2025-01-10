@@ -260,39 +260,85 @@ export function getQuoteMatchesInBookRef({
     return patterns;
   }, []);
 
-  //SEARCH WHEN THERE IS ONLY ONE PATTERN OR WHEN WANTING TO FIND ALL OCCURRENCES OF EACH GROUP OF PATTERNS
+  /**
+   * SEARCHES FOR ALL OCCURRENCES OF EACH GROUP OF PATTERNS
+   * @param {string} source - The source text to search in
+   * @param {RegExp[]} patterns - Array of regex patterns to search for
+   * @returns {string[][]} Array of matches, where each inner array contains matches for each pattern
+   * **/
   const searchQuotesGroups = (source, patterns) => {
-    let keepSearching = true;
-    let matches = [];
-    let limit = 100;
-    let iteration = 0;
-    let index = 0;
-    while (keepSearching) {
-      const currentMatches = patterns.reduce(
-        // eslint-disable-next-line no-loop-func
-        (currentMatches, regexp, i, matches) => {
-          const match = XRegExp.exec(source, regexp, index);
-          if (match) {
-            index = match.index + match[0].length;
-            return currentMatches.concat(match.slice(1));
+    // Keep track of patterns we've already processed
+    const processedPatterns = new Set();
+    
+    const currentMatches = patterns.reduce(
+      (currentMatches, regexp, i, patterns) => {
+        // Skip if we've already processed this pattern
+        if (processedPatterns.has(i)) {
+          return currentMatches;
+        }
+          
+        // Find all indexes where this pattern appears
+        const patternIndexes = patterns.reduce((indexes, pattern, index) => {
+          const currentPattern = regexp.toString();
+          const nextPattern = pattern.toString().replace("\\s*", "");
+          if (nextPattern === currentPattern) {
+            indexes.push(index + 1);
+            processedPatterns.add(index);
           }
-          keepSearching = false;
-          matches.length = 0;
-          return [];
-        },
-        []
-      );
-      if (currentMatches.length) matches.push(currentMatches);
-      if (iteration === limit) {
-        keepSearching = false;
-        console.log("limit reached");
+          return indexes;
+        }, []);
+
+        const match = [...source.matchAll(XRegExp.globalize(regexp))];
+        if (match.length) {
+          return currentMatches.concat(match.map((m, matchIndex) => {
+            // Rotate through the pattern indexes for each match
+            m.patternIndex = patternIndexes.length ? patternIndexes[matchIndex % patternIndexes.length] : i + 1;
+            return m;
+          }));
+        }
+        patterns.length = 0;
+        return [];
+      },
+      []
+    );
+    currentMatches.sort((a, b) => a.index - b.index);
+    
+    // Group matches by consecutive patternIndex
+    const groupedMatches = currentMatches.reduce((groups, match) => {
+      const currentGroup = groups[groups.length - 1] || [];
+      
+      if (currentGroup.length === 0 || match.patternIndex === currentGroup[currentGroup.length - 1].patternIndex + 1) {
+        currentGroup.push(match);
+        if (groups.length === 0) groups.push(currentGroup);
+      } else {
+        groups.push([match]);
       }
-      iteration++;
+      
+      return groups;
+    }, []);
+
+    // Filter groups that have all consecutive patterns (1 to patterns.length)
+    const validGroups = groupedMatches.filter(group => 
+      group.length === patterns.length && 
+      group[0].patternIndex === 1 && 
+      group[group.length - 1].patternIndex === patterns.length
+    );
+
+    if (validGroups.length) {
+      const result = [];
+      validGroups.forEach(group => {
+        result.push(group.reduce((acc, match) => {
+          acc.concat(match.slice(1));
+          return acc.concat(match.slice(1));;
+        }, []));
+      });
+      return result;
     }
-    return matches;
+
+    return [];
   };
 
-  //SEARCH WHEN WANTING TO FIND A SPECIFIC OCCURRENCE OF THE FIRST PATTERN, AND THEN FOLLOWING OCCURRENCES OF THE OTHER PATTERNS
+  //SEARCHES FOR A SPECIFIC OCCURRENCE OF THE FIRST PATTERN, AND THEN FOLLOWING OCCURRENCES OF THE OTHER PATTERNS
   const searchFirstQuoteAndFollowingQuotes = (source, patterns, occurrence) => {
     // Early return for invalid inputs
     if (!source || !patterns.length || occurrence < -1) {
@@ -310,7 +356,7 @@ export function getQuoteMatchesInBookRef({
       firstMatches.push({
         text: match[1],
         index: match.index,
-        endIndex: match.index + match[0].length
+        endIndex: match.index + match[0].length,
       });
       startIndex = match.index + 1;
 
@@ -325,29 +371,28 @@ export function getQuoteMatchesInBookRef({
 
     const targetMatch = firstMatches[targetOccurrenceCount - 1];
     const nextMatch = { index: source.length };
-    const result = firstMatches.map(match => [match.text]);
+    const result = firstMatches.map((match) => [match.text]);
     const lastMatch = result[result.length - 1];
-    
+
     // Search for subsequent patterns between target occurrence and end of source
     let currentIndex = targetMatch.endIndex;
     const searchBoundary = nextMatch.index;
 
     for (let i = 1; i < patterns.length; i++) {
       const nextPatternMatch = XRegExp.exec(
-        source.slice(currentIndex, searchBoundary), 
+        source.slice(currentIndex, searchBoundary),
         patterns[i],
         0
       );
-      
+
       if (!nextPatternMatch) return [];
-      
+
       lastMatch.push(...nextPatternMatch.slice(1));
       currentIndex += nextPatternMatch.index + nextPatternMatch[0].length;
     }
 
     return result;
   };
-
 
   const matches =
     occurrence === -1 || searchPatterns.length === 1

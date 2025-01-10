@@ -7,6 +7,24 @@ const TEST_TIMOUT = 10000;
 const tests = [
   {
     params: {
+      name: "",
+      bookId: "PSA",
+      ref: "6:8-9",
+      quote: "יְ֭הוָה & יְ֝הוָ֗ה",
+    },
+    expected: "Yahweh & Yahweh",
+  },
+  {
+    params: {
+      name: "Middle word not being highlighted",
+      bookId: "PSA",
+      ref: "6:8-9",
+      quote: "יְ֝הוָ֗ה & יְ֭הוָה & יְ֝הוָ֗ה",
+    },
+    expected: "Yahweh & Yahweh & Yahweh",
+  },
+  {
+    params: {
       name: "Test 1",
       bookId: "JUD",
       ref: "1:10",
@@ -14,6 +32,36 @@ const tests = [
       occurrence: 2,
     },
     expected: "what they understand by instinct as the unreasoning animals",
+    expectedSelections: [
+      {
+        text: "ὅσα",
+        occurrence: 2,
+      },
+      {
+        text: "φυσικῶς",
+        occurrence: 1,
+      },
+      {
+        text: "ὡς",
+        occurrence: 1,
+      },
+      {
+        text: "τὰ",
+        occurrence: 1,
+      },
+      {
+        text: "ἄλογα",
+        occurrence: 1,
+      },
+      {
+        text: "ζῷα",
+        occurrence: 1,
+      },
+      {
+        text: "ἐπίστανται",
+        occurrence: 1,
+      },
+    ],
   },
   {
     params: {
@@ -106,15 +154,7 @@ const tests = [
     },
     expected: "both & and",
   },
-  {
-    params: {
-      name: "Middle word not being highlighted",
-      bookId: "PSA",
-      ref: "6:8-9",
-      quote: "יְ֝הוָ֗ה & יְ֭הוָה & יְ֝הוָ֗ה",
-    },
-    expected: "Yahweh & Yahweh & Yahweh",
-  },
+
   {
     params: {
       name: "Testing deuteronomy highlighting error",
@@ -170,15 +210,6 @@ const tests = [
       quote: "סֶֽלָה",
     },
     expected: "Selah",
-  },
-  {
-    params: {
-      name: "",
-      bookId: "PSA",
-      ref: "6:8-9",
-      quote: "יְ֝הוָ֗ה & יְ֭הוָה & יְ֝הוָ֗ה",
-    },
-    expected: "Yahweh & Yahweh & Yahweh",
   },
   {
     params: {
