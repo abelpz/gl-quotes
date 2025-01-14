@@ -215,6 +215,8 @@ export function getQuoteMatchesInBookRef({
 
   const book = setBook(bookObject, ref);
   let sourceArray = [];
+
+  //TODO: use this instead of search patterns to get list of found occurrences and avoid using complex regex searches.
   book.forEachVerse((verseObjects, verseRef) => {
     const tokensMap = quoteTokens.reduce((tokensMap, word) => {
       tokensMap.set(normalize(word, true), { count: 0 });
