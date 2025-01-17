@@ -273,6 +273,29 @@ const tests = [
     expected:
       "For I killed a man for my wound,\neven a young man for my bruise",
   },
+  {
+    params: {
+      name: "",
+      bookId: "1PE",
+      ref: "1:24",
+      quote:
+        "πᾶσα σὰρξ ὡς χόρτος, καὶ πᾶσα δόξα αὐτῆς ὡς ἄνθος χόρτου. ἐξηράνθη ὁ χόρτος, καὶ τὸ ἄνθος ἐξέπεσεν,",
+      occurrence: 1,
+    },
+    expected: `All flesh {is} like grass,
+and all its glory {is} like the flower of the grass.
+The grass was dried up, and the flower fell off`,
+  },
+  {
+    params: {
+      name: "",
+      bookId: "1CO",
+      ref: "1:2",
+      quote: "τῇ ἐκκλησίᾳ τοῦ Θεοῦ & τῇ οὔσῃ ἐν Κορίνθῳ",
+      occurrence: 1,
+    },
+    expected: "to the church of God that is in Corinth",
+  }
 ];
 
 describe("Find quotes", () => {
@@ -300,7 +323,7 @@ describe("Find quotes", () => {
       try {
         expect(targetQuotes).toEqual(expected);
       } catch (e) {
-        console.log({ params, expected, received:targetQuotes, quoteMatches });
+        console.log({ params, expected, received: targetQuotes, quoteMatches });
         throw e;
       }
       if (expectedSelections) {
