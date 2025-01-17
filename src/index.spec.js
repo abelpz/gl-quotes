@@ -237,7 +237,7 @@ const tests = [
         "דְּבִרָ⁠ה֮ מֵ⁠עֵ֣מֶק עָכוֹר֒ & הַ⁠גִּלְגָּ֗ל & לְ⁠מַעֲלֵ֣ה אֲדֻמִּ֔ים & מֵי־עֵ֣ין שֶׁ֔מֶשׁ & עֵ֥ין רֹגֵֽל",
     },
     expected:
-      "to Debir from the Valley of Trouble, & the Gilgal, & of the ascent of Adummim, & the waters of En Shemesh & En Rogel",
+      "to Debir from the Valley of Trouble & the Gilgal & of the ascent of Adummim & the waters of En Shemesh & En Rogel",
   },
   {
     params: {
@@ -262,7 +262,7 @@ const tests = [
       ref: "2:23",
       quote: "עֶ֚צֶם מֵֽ⁠עֲצָמַ֔⁠י וּ⁠בָשָׂ֖ר מִ⁠בְּשָׂרִ֑⁠י",
     },
-    expected: "is} bone from my bones\nand flesh from my flesh",
+    expected: "is bone from my bones\nand flesh from my flesh",
   },
   {
     params: {
@@ -295,7 +295,43 @@ The grass was dried up, and the flower fell off`,
       occurrence: 1,
     },
     expected: "to the church of God that is in Corinth",
-  }
+  },
+  {
+    params: {
+      bookId: "1PE",
+      ref: "1:7",
+      quote: "τὸ δοκίμιον ὑμῶν τῆς πίστεως & διὰ πυρὸς δὲ δοκιμαζομένου",
+      occurrence: 1,
+    },
+    expected: "the genuineness of your faith & but being tested by fire",
+  },
+  {
+    params: {
+      bookId: "1CO",
+      ref: "3:9",
+      quote: "Θεοῦ",
+      occurrence: -1,
+    },
+    expected: "God’s & God’s & God’s",
+  },
+  {
+    params: {
+      bookId: "1CO",
+      ref: "3:9",
+      quote: "συνεργοί & γεώργιον & οἰκοδομή",
+      occurrence: 1,
+    },
+    expected: "fellow workers & field & building",
+  },
+  {
+    params: {
+      bookId: "1CO",
+      ref: "7:32",
+      quote: "ὁ ἄγαμος & ἀρέσῃ",
+      occurrence: 1,
+    },
+    expected: "The unmarried man & he might please",
+  },
 ];
 
 describe("Find quotes", () => {
@@ -318,7 +354,7 @@ describe("Find quotes", () => {
       const targetQuotes = getTargetQuoteFromWords({
         targetBook,
         wordsMap: quoteMatches,
-      });
+      }, { removeBrackets: true });
 
       try {
         expect(targetQuotes).toEqual(expected);

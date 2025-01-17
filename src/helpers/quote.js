@@ -1,5 +1,5 @@
 import { tokenize, tokenizeOrigLang } from "string-punctuation-tokenizer";
-import { DEFAULT_SEPARATOR, QUOTE_ELLIPSIS } from "../utils/consts";
+import { DEFAULT_SEPARATOR, QUOTE_ELLIPSIS, REMOVE_BRACKETS_PATTERN } from "../utils/consts";
 import { refToString, setBook, verseObjectsToString } from "./scripture";
 import { doesReferenceContain } from "bible-reference-range";
 import XRegExp from "xregexp";
@@ -78,7 +78,7 @@ export function getTargetQuotesFromOrigWords({
   verseObjects,
   wordObjects,
   isMatch,
-}) {
+}, { removeBrackets = false } = {}) {
   let text = "";
 
   if (!verseObjects || !wordObjects) {
@@ -112,7 +112,7 @@ export function getTargetQuotesFromOrigWords({
         // We have a match (or previously had a match in the parent) so we want to include all text that we find,
         if (needsEllipsis) {
           // Need to add an ellipsis to the separator since a previous match but not one right next to this one
-          separator += QUOTE_ELLIPSIS + DEFAULT_SEPARATOR;
+          separator = DEFAULT_SEPARATOR +QUOTE_ELLIPSIS + DEFAULT_SEPARATOR;
           needsEllipsis = false;
         }
 
@@ -133,7 +133,7 @@ export function getTargetQuotesFromOrigWords({
             wordObjects,
             verseObjects: verseObject.children,
             isMatch: true,
-          });
+          }, { removeBrackets });
         }
       } else if (verseObject.children) {
         // Did not find a match, yet still need to go through all the children and see if there's match.
@@ -143,13 +143,13 @@ export function getTargetQuotesFromOrigWords({
           wordObjects,
           verseObjects: verseObject.children,
           isMatch,
-        });
+        }, { removeBrackets });
 
         if (childText) {
           lastMatch = true;
 
           if (needsEllipsis) {
-            separator += QUOTE_ELLIPSIS + DEFAULT_SEPARATOR;
+            separator = DEFAULT_SEPARATOR + QUOTE_ELLIPSIS + DEFAULT_SEPARATOR;
             needsEllipsis = false;
           }
           text += (text ? separator : "") + childText;
@@ -167,14 +167,17 @@ export function getTargetQuotesFromOrigWords({
       text
     ) {
       // Found some text that is a word separator/punctuation, e.g. the apostrophe between "God" and "s" for "God's"
-      // We want to preserve this so we can show "God's" instead of "God ... s"
+      // We want to preserve this so we can show "God's" instead of "God & s"
       if (separator === DEFAULT_SEPARATOR) {
         separator = "";
       }
       separator += verseObjects[i + 1].text;
     }
   }
-  return text;
+
+  const result = removeBrackets ? text.replace(REMOVE_BRACKETS_PATTERN, "") : text;
+
+  return result;
 }
 
 export function getQuoteMatchesInBookRef({
@@ -426,7 +429,7 @@ export function getQuoteMatchesInBookRef({
   return foundOccurrences;
 }
 
-export function getTargetQuoteFromWords({ targetBook, wordsMap }) {
+export function getTargetQuoteFromWords({ targetBook, wordsMap }, {removeBrackets = false} = {}) {
   if (!(wordsMap instanceof Map))
     throw new Error("wordsMap should be an instance of Map");
   let quotes = [];
@@ -450,7 +453,7 @@ export function getTargetQuoteFromWords({ targetBook, wordsMap }) {
       wordObjects,
       verseObjects,
       isMatch: false,
-    });
+    }, { removeBrackets });
     quotes.push(refQuotes);
   }
   return quotes.join(" " + QUOTE_ELLIPSIS + " ");
@@ -475,7 +478,7 @@ export function getTargetQuoteFromSourceQuote({
   targetBook,
   options,
 }) {
-  const { occurrence: o = -1, fromOrigLang = true } = options;
+  const { occurrence: o = -1, fromOrigLang = true, removeBrackets = false } = options;
   const occurrence = parseInt(o, 10);
 
   const quoteMatches = getQuoteMatchesInBookRef({
@@ -489,6 +492,6 @@ export function getTargetQuoteFromSourceQuote({
   const targetQuotes = getTargetQuoteFromWords({
     targetBook,
     wordsMap: quoteMatches,
-  });
+  }, { removeBrackets });
   return targetQuotes;
 }
