@@ -28,7 +28,7 @@ export function cleanQuoteString(quote) {
       // remove space before apostrophes
       .replace(/ ’./gi, "’.")
       .trim()
-      .replace(/ *\... */g, ` ${QUOTE_ELLIPSIS} `)
+      .replace(/ *\.{3} */g, ` ${QUOTE_ELLIPSIS} `)
       .replace(/ *… */gi, ` ${QUOTE_ELLIPSIS} `)
       .replaceAll(/\\n|\\r/g, "")
   );
@@ -348,52 +348,57 @@ export function getQuoteMatchesInBookRef({
     }
 
     const firstPattern = patterns[0];
-    const firstMatches = [];
+    const firstPatternMatches = [];
     let match;
     let startIndex = 0;
-    const targetOccurrenceCount = occurrence;
 
     // Only find occurrences up to target + 1 (to establish boundary)
     while ((match = XRegExp.exec(source, firstPattern, startIndex)) !== null) {
-      firstMatches.push({
-        text: match[1],
+      firstPatternMatches.push({
+        words: match.slice(1),
         index: match.index,
         endIndex: match.index + match[0].length,
       });
       startIndex = match.index + 1;
 
-      // Stop once we've found the occurrence after our target
-      if (firstMatches.length === targetOccurrenceCount) break;
+      // Stop searching for the first pattern once we've found the occurrence
+      if (firstPatternMatches.length === occurrence) break;
     }
 
     // If we didn't find our target occurrence, return empty array
-    if (firstMatches.length < targetOccurrenceCount) {
+    if (firstPatternMatches.length < occurrence) {
       return [];
     }
 
-    const targetMatch = firstMatches[targetOccurrenceCount - 1];
-    const nextMatch = { index: source.length };
-    const result = firstMatches.map((match) => [match.text]);
-    const lastMatch = result[result.length - 1];
+    const firstPatternMatch = firstPatternMatches[occurrence - 1];
+    const result = firstPatternMatch.words;
 
     // Search for subsequent patterns between target occurrence and end of source
-    let currentIndex = targetMatch.endIndex;
-    const searchBoundary = nextMatch.index;
+    let currentIndex = firstPatternMatch.endIndex;
+    const searchBoundary = source.length;
 
     for (let i = 1; i < patterns.length; i++) {
+      // Search for the next pattern in the remaining text, starting from where the last pattern was found
       const nextPatternMatch = XRegExp.exec(
         source.slice(currentIndex, searchBoundary),
         patterns[i],
         0
       );
 
+      // If no match is found, return an empty array
       if (!nextPatternMatch) return [];
 
-      lastMatch.push(...nextPatternMatch.slice(1));
+      // Add the matched words to the results array
+      result.push(...nextPatternMatch.slice(1));
+
+      // Update the current index to the end of the last match
       currentIndex += nextPatternMatch.index + nextPatternMatch[0].length;
     }
 
-    return result;
+    // Create array with empty slots for skipped occurrences,
+    // plus one slot for our matching result, this maintains compatibility with the searchQuotesGroups function
+    const numberOfSkippedOccurrences = firstPatternMatches.length - 1;
+    return Array(numberOfSkippedOccurrences).fill([]).concat([result]);
   };
 
   const matches =
