@@ -1,8 +1,7 @@
 import { tokenize, tokenizeOrigLang } from "string-punctuation-tokenizer";
 import { DEFAULT_SEPARATOR, QUOTE_ELLIPSIS, REMOVE_BRACKETS_PATTERN } from "../utils/consts";
-import { refToString, setBook, verseObjectsToString } from "./scripture";
+import {  setBook, verseObjectsReducer } from "./scripture";
 import { doesReferenceContain } from "bible-reference-range";
-import XRegExp from "xregexp";
 
 export function cleanQuoteString(quote) {
   return (
@@ -188,245 +187,11 @@ export function getQuoteMatchesInBookRef({
   occurrence = -1,
 }) {
   if (occurrence === 0) return new Map();
-  const DATA_SEPARATOR = "|";
-  const OPEN_CHAR = "{";
-  const CLOSE_CHAR = "}";
-  const REF_PATTERN = "\\d+:\\d+";
-  const OCCURRENCE_PATTERN = "\\d+";
-  const enclose = (word) => OPEN_CHAR + word + CLOSE_CHAR;
-
-  const joinWordData = (word, refObject, occurrence) => {
-    const { chapter, verse } = refObject;
-    const ref = `${chapter}:${verse}`;
-    const data = enclose(`${ref}${DATA_SEPARATOR}${occurrence}`);
-    return `${word}${data}`;
-  };
-
-  const splitWordData = (word) => {
-    const [_word, data] = word.split(OPEN_CHAR);
-    const [ref, occurrence] = data.slice(0, -1).split(DATA_SEPARATOR);
-    const [chapter, verse] = ref.split(":");
-    return {
-      text: _word,
-      chapter: parseInt(chapter),
-      verse: parseInt(verse),
-      occurrence: parseInt(occurrence),
-    };
-  };
 
   const quoteTokens = tokenizeQuote(quote, isOrigLang);
 
   const book = setBook(bookObject, ref);
-  let sourceArray = [];
-
-  //TODO: use this instead of search patterns to get list of found occurrences and avoid using complex regex searches.
-  book.forEachVerse((verseObjects, verseRef) => {
-    const tokensMap = quoteTokens.reduce((tokensMap, word) => {
-      tokensMap.set(normalize(word, true), { count: 0 });
-      return tokensMap;
-    }, new Map());
-
-    sourceArray.push(
-      verseObjectsToString(verseObjects, (word) => {
-        const _word = normalize(word, true);
-        const quote = tokensMap.get(_word);
-        if (!quote) return !_word ? " " : _word;
-        quote.count++;
-        return joinWordData(_word, verseRef, quote.count);
-      })
-    );
-  });
-  const sourceString = sourceArray.join("\n");
-
-  const searchPatterns = quoteTokens.reduce((patterns, token, index) => {
-    if (token === QUOTE_ELLIPSIS) return patterns;
-    const push =
-      (patterns.length === 0) | (quoteTokens[index - 1] === QUOTE_ELLIPSIS);
-    const AFTER =
-      quoteTokens[index + 1] && quoteTokens[index + 1] === QUOTE_ELLIPSIS
-        ? ""
-        : `\\s*`;
-    const escaped = XRegExp.escape(normalize(token, true));
-    const regexp = XRegExp(
-      `(${escaped}${enclose(
-        `${REF_PATTERN}${XRegExp.escape("|")}${OCCURRENCE_PATTERN}`
-      )})${AFTER}`
-    );
-
-    if (push) {
-      patterns.push(regexp);
-      return patterns;
-    }
-
-    const current = patterns.length - 1;
-    patterns[current] = XRegExp.union([patterns[current], regexp], "g", {
-      conjunction: "none",
-    });
-    return patterns;
-  }, []);
-
-  /**
-   * SEARCHES FOR ALL OCCURRENCES OF EACH GROUP OF PATTERNS
-   * @param {string} source - The source text to search in
-   * @param {RegExp[]} patterns - Array of regex patterns to search for
-   * @returns {string[][]} Array of matches, where each inner array contains matches for each pattern
-   * **/
-  const searchQuotesGroups = (source, patterns) => {
-    // Keep track of patterns we've already processed
-    const processedPatterns = new Set();
-    
-    const currentMatches = patterns.reduce(
-      (currentMatches, regexp, i, patterns) => {
-        // Skip if we've already processed this pattern
-        if (processedPatterns.has(i)) {
-          return currentMatches;
-        }
-          
-        // Find all indexes where this pattern appears
-        const patternIndexes = patterns.reduce((indexes, pattern, index) => {
-          const currentPattern = regexp.toString();
-          const nextPattern = pattern.toString().replace("\\s*", "");
-          if (nextPattern === currentPattern) {
-            indexes.push(index + 1);
-            processedPatterns.add(index);
-          }
-          return indexes;
-        }, []);
-
-        const match = [...source.matchAll(XRegExp.globalize(regexp))];
-        if (match.length) {
-          return currentMatches.concat(match.map((m, matchIndex) => {
-            // Rotate through the pattern indexes for each match
-            m.patternIndex = patternIndexes.length ? patternIndexes[matchIndex % patternIndexes.length] : i + 1;
-            return m;
-          }));
-        }
-        patterns.length = 0;
-        return [];
-      },
-      []
-    );
-    currentMatches.sort((a, b) => a.index - b.index);
-    
-    // Group matches by consecutive patternIndex
-    const groupedMatches = currentMatches.reduce((groups, match) => {
-      const currentGroup = groups[groups.length - 1] || [];
-      
-      if (currentGroup.length === 0 || match.patternIndex === currentGroup[currentGroup.length - 1].patternIndex + 1) {
-        currentGroup.push(match);
-        if (groups.length === 0) groups.push(currentGroup);
-      } else {
-        groups.push([match]);
-      }
-      
-      return groups;
-    }, []);
-
-    // Filter groups that have all consecutive patterns (1 to patterns.length)
-    const validGroups = groupedMatches.filter(group => 
-      group.length === patterns.length && 
-      group[0].patternIndex === 1 && 
-      group[group.length - 1].patternIndex === patterns.length
-    );
-
-    if (validGroups.length) {
-      const result = [];
-      validGroups.forEach(group => {
-        result.push(group.reduce((acc, match) => {
-          acc.concat(match.slice(1));
-          return acc.concat(match.slice(1));;
-        }, []));
-      });
-      return result;
-    }
-
-    return [];
-  };
-
-  //SEARCHES FOR A SPECIFIC OCCURRENCE OF THE FIRST PATTERN, AND THEN FOLLOWING OCCURRENCES OF THE OTHER PATTERNS
-  const searchFirstQuoteAndFollowingQuotes = (source, patterns, occurrence) => {
-    // Early return for invalid inputs
-    if (!source || !patterns.length || occurrence < -1) {
-      return [];
-    }
-
-    const firstPattern = patterns[0];
-    const firstPatternMatches = [];
-    let match;
-    let startIndex = 0;
-
-    // Only find occurrences up to target + 1 (to establish boundary)
-    while ((match = XRegExp.exec(source, firstPattern, startIndex)) !== null) {
-      firstPatternMatches.push({
-        words: match.slice(1),
-        index: match.index,
-        endIndex: match.index + match[0].length,
-      });
-      startIndex = match.index + 1;
-
-      // Stop searching for the first pattern once we've found the occurrence
-      if (firstPatternMatches.length === occurrence) break;
-    }
-
-    // If we didn't find our target occurrence, return empty array
-    if (firstPatternMatches.length < occurrence) {
-      return [];
-    }
-
-    const firstPatternMatch = firstPatternMatches[occurrence - 1];
-    const result = firstPatternMatch.words;
-
-    // Search for subsequent patterns between target occurrence and end of source
-    let currentIndex = firstPatternMatch.endIndex;
-    const searchBoundary = source.length;
-
-    for (let i = 1; i < patterns.length; i++) {
-      // Search for the next pattern in the remaining text, starting from where the last pattern was found
-      const nextPatternMatch = XRegExp.exec(
-        source.slice(currentIndex, searchBoundary),
-        patterns[i],
-        0
-      );
-
-      // If no match is found, return an empty array
-      if (!nextPatternMatch) return [];
-
-      // Add the matched words to the results array
-      result.push(...nextPatternMatch.slice(1));
-
-      // Update the current index to the end of the last match
-      currentIndex += nextPatternMatch.index + nextPatternMatch[0].length;
-    }
-
-    // Create array with empty slots for skipped occurrences,
-    // plus one slot for our matching result, this maintains compatibility with the searchQuotesGroups function
-    const numberOfSkippedOccurrences = firstPatternMatches.length - 1;
-    return Array(numberOfSkippedOccurrences).fill([]).concat([result]);
-  };
-
-  const matches =
-    occurrence === -1 || searchPatterns.length === 1
-      ? searchQuotesGroups(sourceString, searchPatterns)
-      : searchFirstQuoteAndFollowingQuotes(
-          sourceString,
-          searchPatterns,
-          occurrence
-        );
-
-  const foundOccurrences = matches.reduce((occurrences, words, key) => {
-    const currentOccurence = key + 1;
-    if (occurrence !== -1 && currentOccurence !== occurrence)
-      return occurrences;
-    words.forEach((_word) => {
-      const { chapter, verse, ...wordObject } = splitWordData(_word);
-      const refString = refToString({ chapter, verse });
-      const currentWordsInRef = occurrences.get(refString);
-      if (currentWordsInRef) currentWordsInRef.push(wordObject);
-      else occurrences.set(refString, [wordObject]);
-    });
-    return occurrences;
-  }, new Map());
-  return foundOccurrences;
+  return findQuoteMatches(book, quoteTokens, occurrence);
 }
 
 export function getTargetQuoteFromWords({ targetBook, wordsMap }, {removeBrackets = false} = {}) {
@@ -494,4 +259,258 @@ export function getTargetQuoteFromSourceQuote({
     wordsMap: quoteMatches,
   }, { removeBrackets });
   return targetQuotes;
+}
+
+// Helper functions to make the main logic clearer
+function createTokensMap(quoteTokens) {
+  return quoteTokens.reduce((tokensMap, word) => {
+    tokensMap.set(normalize(word, true), { count: 0 });
+    return tokensMap;
+  }, new Map());
+}
+
+function processWord(word, tokensMap, verseRef, wordIndex) {
+  if (!word || !tokensMap || !verseRef) {
+    return null;
+  }
+
+  const normalizedWord = normalize(word, true);
+  if (!normalizedWord) return null;
+  
+  const quote = tokensMap.get(normalizedWord);
+  if (!quote) return null;
+  
+  quote.count++;
+  return {
+    word: normalizedWord,
+    occurrence: quote.count,
+    ref: verseRef,
+    index: wordIndex
+  };
+}
+
+// Define a clear type structure for matches
+function createMatchEntry(word, wordData) {
+  if (!word || !wordData) {
+    throw new Error('Invalid parameters for createMatchEntry');
+  }
+  return {
+    matchedText: word,
+    wordMatches: [wordData]
+  };
+}
+
+function tryAppendToLastMatch(matchesArray, wordData, normalizedWord) {
+  if (!matchesArray.length) return false;
+  
+  const lastMatch = matchesArray[matchesArray.length - 1];
+  const lastWordInQuote = lastMatch.wordMatches[lastMatch.wordMatches.length - 1];
+
+  // Check if words are consecutive
+  if (lastWordInQuote.index === wordData.index - 1) {
+    lastMatch.matchedText = `${lastMatch.matchedText} ${normalizedWord}`;
+    lastMatch.wordMatches.push(wordData);
+    return true;
+  }
+  return false;
+}
+
+/** 
+ * @description Finds the index of the nth occurrence of a quote in the matches array.
+ * @param {Array<object>} matches - The array of matches to search through
+ * @param {number} quoteIndex - The index of the quote to search for
+ * @param {number} targetOccurrence - The occurrence number to find
+ * @returns {number} The index of the nth occurrence of the quote, or -1 if not found
+ */
+function findQuoteOccurrenceIndex(matches, quoteIndex = 0, targetOccurrence = 1) {
+  let occurrenceCount = 0;
+  
+  for (let i = 0; i < matches.length; i++) {
+    if (matches[i].quoteIndex === quoteIndex) {
+      occurrenceCount++;
+      if (occurrenceCount === targetOccurrence) {
+        return i;
+      }
+    }
+  }
+  return -1;
+}
+
+function findConsecutiveQuotes(filteredMatches, firstQuoteIndex, splittedQuotes) {
+  let targetIndex = 1;
+  const totalQuotes = splittedQuotes.length;
+  const results = [];
+  
+  for (const match of filteredMatches.slice(firstQuoteIndex + 1)) {
+    if (match.matchedText !== splittedQuotes[targetIndex]) break;
+    results.push(match);
+    targetIndex++;
+    
+    if (targetIndex === totalQuotes) {
+      return results;
+    }
+  }
+  return [];
+}
+
+/**
+ * Quote Structure Terminology:
+ * 
+ * wholeQuote: Complete quote string containing multiple parts joined by "&"
+ *   Example: "beginning & was the Word & was with God & was God"
+ * 
+ * quotePart: Single segment of the quote (between "&" separators)
+ *   Example: "was the Word"
+ * 
+ * quoteWord: Individual word within a quotePart
+ *   Example: "was"
+ * 
+ * Key Variables:
+ * - quoteTokens: Array of normalized quoteWords and quotePartJoiners
+ *     Example: ["beginning", "&", "was", "the", "Word", "&", ...]
+ */
+function findQuoteMatches(book, quoteTokens, occurrence) {
+  // Early validation
+  if (occurrence === 0) {
+    return new Map();
+  }
+
+  if(!book) throw new Error("Invalid input, book is undefined");
+  if (!quoteTokens) throw new Error("Invalid input, quoteTokens is undefined");
+
+  /**
+   * Split the quote into parts, where each part is a quotePart.
+   * Example: "beginning & was the Word & was with God & was God"
+   * splittedQuotes: ["beginning", "was the Word", "was with God", "was God"]
+   * 
+   * @type {Array<string>}
+   */
+  const splittedQuotes = quoteTokens.join(" ").split(" & ");
+  let wordIndex = 0;
+  const matchesArray = [];
+
+  // First pass: Find all potential matches for each quotePart
+  book.forEachVerse((verseObjects, verseRef) => {
+    const tokensMap = createTokensMap(quoteTokens);
+
+    verseObjectsReducer(verseObjects, (acc, word) => {
+      wordIndex++;
+      
+      const wordData = processWord(word, tokensMap, verseRef, wordIndex);
+      if (!wordData) return acc;
+
+      // Try to append to previous match if consecutive, meaning this quoteWord is part of the previously matched partial quotePart. e.g. "Word" is part of "was the Word"
+      if (tryAppendToLastMatch(matchesArray, wordData, wordData.word)) {
+        return acc;
+      }
+
+      // Create new match entry using the explicit structure
+      acc.push(createMatchEntry(wordData.word, wordData));
+      
+      return acc;
+    }, matchesArray, ['word']);
+  });
+
+  if (!matchesArray.length) return new Map();
+
+  // Second pass: Filter matches to only keep complete quote parts
+  // Example: For quote "was the Word", remove matches of just "was" or "the"
+  // Also adds the position (index) of where each matched quotePart appears in the original wholeQuote
+  const filteredMatches = matchesArray.reduce((acc, match) => {
+    const quoteIndex = splittedQuotes.indexOf(match.matchedText);
+    if (quoteIndex !== -1) {
+      // Enhance the match object with quote position information
+      acc.push({
+        ...match,
+        quoteIndex: quoteIndex // Add the position in the original quote
+      });
+    }
+    return acc;
+  }, []);
+
+  let matches = [];
+
+  // When occurrence is greater than 0, we are searching for the nth occurrence of the first quote, and the consecutive quoteParts that follows it.
+  // Example: For the wholeQuote "was & God", and occurrence 2, we are searching for the 2nd occurrence of "was" and the quotePart "God" that follows it.
+  if (occurrence > 0) {
+    // Find the index of the nth occurrence of the first quote
+    const indexOfFirstQuote = findQuoteOccurrenceIndex(filteredMatches, 0, occurrence);
+    if (indexOfFirstQuote === -1) return new Map();
+
+    // Find the consecutive quotes that follow the nth occurrence of the first quote
+    const followingQuotes = findConsecutiveQuotes(
+      filteredMatches,
+      indexOfFirstQuote,
+      splittedQuotes
+    );
+
+    // Check if the total number of quoteParts found is less than the total number of quoteParts in splittedQuotes
+    if (followingQuotes.length + 1 < splittedQuotes.length) {
+      return new Map();
+    }
+
+    // Combine the first quotePart and the consecutive quoteParts
+    matches = [
+      filteredMatches[indexOfFirstQuote],
+      ...followingQuotes,
+    ];
+  } else if (occurrence === -1) {
+    // When occurrence is -1, we are searching for all consecutive wholeQuote matches
+    // Example: For the wholeQuote "was & God", we are searching for all matches of "was" and "God", i.e. "the word {was} with {God}, and the word {was} {God}"
+    matches = findConsecutiveWholeQuoteMatches(filteredMatches, splittedQuotes);
+  } else {
+    console.warn("Invalid occurrence value, must be greater that -1");
+    return new Map();
+  }
+
+  // Create a map of occurrences for each reference
+  const matchesMap = matches.reduce((occurrencesMap, matchItem) => {
+    const matchesToProcess = Array.isArray(matchItem) ? matchItem : [matchItem];
+
+    matchesToProcess.forEach((match) => {
+      match.wordMatches.forEach(({ word, occurrence, ref }) => {
+        const refString = `${ref.chapter}:${ref.verse}`;
+        const wordData = { text: word, occurrence };
+
+        if (occurrencesMap.has(refString)) {
+          occurrencesMap.get(refString).push(wordData);
+        } else {
+          occurrencesMap.set(refString, [wordData]);
+        }
+      });
+    });
+
+    return occurrencesMap;
+  }, new Map());
+
+  return matchesMap;
+}
+
+function findConsecutiveWholeQuoteMatches(filteredMatches,  quoteParts) {
+  const totalQuotes = quoteParts.length;
+  const results = [];
+  let currentGroup = [];
+  let expectedQuoteIndex = 0;
+
+  for (const match of filteredMatches) {
+    if (match.matchedText !== quoteParts[expectedQuoteIndex]) {
+      if (currentGroup.length === totalQuotes) {
+        results.push(currentGroup);
+      }
+      currentGroup = [];
+      expectedQuoteIndex = 0;
+    }
+    else {
+      currentGroup.push(match);
+      expectedQuoteIndex++;
+      
+      if (expectedQuoteIndex === totalQuotes) {
+        results.push([...currentGroup]);
+        currentGroup = [];
+        expectedQuoteIndex = 0;
+      }
+    }
+  }
+
+  return results;
 }
