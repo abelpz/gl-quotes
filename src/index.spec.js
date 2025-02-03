@@ -8,6 +8,64 @@ const tests = [
   {
     params: {
       name: "",
+      bookId: "PSA",
+      ref: "6:8-9",
+      quote: "יְ֭הוָה & יְ֝הוָ֗ה",
+    },
+    expected: "Yahweh & Yahweh",
+  },
+  {
+    params: {
+      name: "Middle word not being highlighted",
+      bookId: "PSA",
+      ref: "6:8-9",
+      quote: "יְ֝הוָ֗ה & יְ֭הוָה & יְ֝הוָ֗ה",
+    },
+    expected: "Yahweh & Yahweh & Yahweh",
+  },
+  {
+    params: {
+      name: "Test 1",
+      bookId: "JUD",
+      ref: "1:10",
+      quote: "ὅσα & φυσικῶς ὡς τὰ ἄλογα ζῷα ἐπίστανται",
+      occurrence: 2,
+    },
+    expected: "what they understand by instinct as the unreasoning animals",
+    expectedSelections: [
+      {
+        text: "ὅσα",
+        occurrence: 2,
+      },
+      {
+        text: "φυσικῶς",
+        occurrence: 1,
+      },
+      {
+        text: "ὡς",
+        occurrence: 1,
+      },
+      {
+        text: "τὰ",
+        occurrence: 1,
+      },
+      {
+        text: "ἄλογα",
+        occurrence: 1,
+      },
+      {
+        text: "ζῷα",
+        occurrence: 1,
+      },
+      {
+        text: "ἐπίστανται",
+        occurrence: 1,
+      },
+    ],
+  },
+  {
+    params: {
+      name: "",
       bookId: "3JN",
       ref: "1:6-7",
       quote:
@@ -92,19 +150,11 @@ const tests = [
       bookId: "TIT",
       ref: "1:4,9",
       quote: "καὶ & καὶ",
-      occurrence: 2,
+      occurrence: 3,
     },
     expected: "both & and",
   },
-  {
-    params: {
-      name: "Middle word not being highlighted",
-      bookId: "PSA",
-      ref: "6:8-9",
-      quote: "יְ֝הוָ֗ה & יְ֭הוָה & יְ֝הוָ֗ה",
-    },
-    expected: "Yahweh & Yahweh & Yahweh",
-  },
+
   {
     params: {
       name: "Testing deuteronomy highlighting error",
@@ -164,15 +214,6 @@ const tests = [
   {
     params: {
       name: "",
-      bookId: "PSA",
-      ref: "6:8-9",
-      quote: "יְ֝הוָ֗ה & יְ֭הוָה & יְ֝הוָ֗ה",
-    },
-    expected: "Yahweh & Yahweh & Yahweh",
-  },
-  {
-    params: {
-      name: "",
       bookId: "JOS",
       ref: "24:10",
       quote: "וָ⁠אַצִּ֥ל אֶתְ⁠כֶ֖ם מִ⁠יָּדֽ⁠וֹ",
@@ -186,7 +227,7 @@ const tests = [
       ref: "1:11",
       quote: "בְּ⁠ע֣וֹד׀ שְׁלֹ֣שֶׁת יָמִ֗ים",
     },
-    expected: "in yet three days",
+    expected: "within three days",
   },
   {
     params: {
@@ -196,7 +237,7 @@ const tests = [
         "דְּבִרָ⁠ה֮ מֵ⁠עֵ֣מֶק עָכוֹר֒ & הַ⁠גִּלְגָּ֗ל & לְ⁠מַעֲלֵ֣ה אֲדֻמִּ֔ים & מֵי־עֵ֣ין שֶׁ֔מֶשׁ & עֵ֥ין רֹגֵֽל",
     },
     expected:
-      "to Debir from the Valley of Trouble, & the Gilgal, & of the ascent of Adummim, & the waters of En Shemesh & En Rogel",
+      "to Debir from the Valley of Trouble & the Gilgal & of the ascent of Adummim & the waters of En Shemesh & En Rogel",
   },
   {
     params: {
@@ -221,7 +262,7 @@ const tests = [
       ref: "2:23",
       quote: "עֶ֚צֶם מֵֽ⁠עֲצָמַ֔⁠י וּ⁠בָשָׂ֖ר מִ⁠בְּשָׂרִ֑⁠י",
     },
-    expected: "is} bone from my bones\nand flesh from my flesh",
+    expected: "is bone from my bones\nand flesh from my flesh",
   },
   {
     params: {
@@ -231,6 +272,65 @@ const tests = [
     },
     expected:
       "For I killed a man for my wound,\neven a young man for my bruise",
+  },
+  {
+    params: {
+      name: "",
+      bookId: "1PE",
+      ref: "1:24",
+      quote:
+        "πᾶσα σὰρξ ὡς χόρτος, καὶ πᾶσα δόξα αὐτῆς ὡς ἄνθος χόρτου. ἐξηράνθη ὁ χόρτος, καὶ τὸ ἄνθος ἐξέπεσεν,",
+      occurrence: 1,
+    },
+    expected: `All flesh {is} like grass,
+and all its glory {is} like the flower of the grass.
+The grass was dried up, and the flower fell off`,
+  },
+  {
+    params: {
+      name: "",
+      bookId: "1CO",
+      ref: "1:2",
+      quote: "τῇ ἐκκλησίᾳ τοῦ Θεοῦ & τῇ οὔσῃ ἐν Κορίνθῳ",
+      occurrence: 1,
+    },
+    expected: "to the church of God that is in Corinth",
+  },
+  {
+    params: {
+      bookId: "1PE",
+      ref: "1:7",
+      quote: "τὸ δοκίμιον ὑμῶν τῆς πίστεως & διὰ πυρὸς δὲ δοκιμαζομένου",
+      occurrence: 1,
+    },
+    expected: "the genuineness of your faith & but being tested by fire",
+  },
+  {
+    params: {
+      bookId: "1CO",
+      ref: "3:9",
+      quote: "Θεοῦ",
+      occurrence: -1,
+    },
+    expected: "God’s & God’s & God’s",
+  },
+  {
+    params: {
+      bookId: "1CO",
+      ref: "3:9",
+      quote: "συνεργοί & γεώργιον & οἰκοδομή",
+      occurrence: 1,
+    },
+    expected: "fellow workers & field & building",
+  },
+  {
+    params: {
+      bookId: "1CO",
+      ref: "7:32",
+      quote: "ὁ ἄγαμος & ἀρέσῃ",
+      occurrence: 1,
+    },
+    expected: "The unmarried man & he might please",
   },
 ];
 
@@ -254,9 +354,14 @@ describe("Find quotes", () => {
       const targetQuotes = getTargetQuoteFromWords({
         targetBook,
         wordsMap: quoteMatches,
-      });
+      }, { removeBrackets: true });
 
-      expect(targetQuotes).toEqual(expected);
+      try {
+        expect(targetQuotes).toEqual(expected);
+      } catch (e) {
+        console.log({ params, expected, received: targetQuotes, quoteMatches });
+        throw e;
+      }
       if (expectedSelections) {
         // if given then also verify the selections are expected
         const selections = quoteMatches.get(ref);
